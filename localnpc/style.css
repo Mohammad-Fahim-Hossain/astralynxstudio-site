@@ -53,11 +53,12 @@ main:focus { outline: none; }
 /* Header */
 .site-header { border-bottom: 1px solid var(--line); background: var(--bg-elev); }
 .header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 2rem; padding-top: 0.9rem; padding-bottom: 0.9rem; }
-.brand-group { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.6rem; }
-.brand { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; color: var(--text); text-decoration: none; }
+.brand-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.6rem; }
+.logo { display: block; width: 32px; height: 32px; flex: none; }
+.brand { display: inline-flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; color: var(--text); text-decoration: none; }
 .brand:visited { color: var(--text); }
 .brand:hover { color: var(--accent-hover); }
-.studio-link { font-size: 0.9rem; color: var(--muted); text-decoration: none; }
+.studio-link { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--muted); text-decoration: none; }
 .studio-link:visited { color: var(--muted); }
 .studio-link:hover { color: var(--text); text-decoration: underline; }
 .brand-sep { color: var(--muted); font-size: 0.9rem; }
@@ -109,6 +110,15 @@ section + section { margin-top: 0.5rem; }
 .shots img { display: block; width: 100%; height: auto; }
 .shots figcaption { padding: 0.8rem 1rem 1rem; font-size: 0.93rem; color: var(--muted); }
 
+.shots-note { color: var(--muted); font-size: 0.93rem; }
+.video { margin: 1.25rem 0; max-width: 48rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.video img { display: block; width: 100%; height: auto; }
+.video figcaption { padding: 0.8rem 1rem 1rem; font-size: 0.93rem; color: var(--muted); }
+.video-link { position: relative; display: block; }
+.video-link::before { content: ""; position: absolute; left: 50%; top: 50%; width: 5rem; height: 5rem; margin: -2.5rem 0 0 -2.5rem; border-radius: 50%; background: rgba(13, 17, 23, 0.78); border: 3px solid #fff; }
+.video-link::after { content: ""; position: absolute; left: 50%; top: 50%; margin: -0.95rem 0 0 -0.55rem; border-style: solid; border-width: 0.95rem 0 0.95rem 1.6rem; border-color: transparent transparent transparent #fff; }
+.video-link:hover::before { background: var(--accent); border-color: var(--accent-text); }
+.video-link:hover::after { border-left-color: var(--accent-text); }
 .steps li { margin: 0.45rem 0; }
 
 /* Code and tables */
