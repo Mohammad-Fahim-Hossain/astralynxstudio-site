@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Astralynx Studio builds games and AI tools for game developers.">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark">
 <title>Astralynx Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,14 +18,23 @@
   </div>
 </header>
 <main id="main" class="wrap" tabindex="-1">
-<section class="hero">
-<h1>Astralynx Studio</h1>
+<section class="hero" aria-labelledby="title">
+<h1 id="title">Astralynx Studio</h1>
 <p class="lead">Astralynx Studio builds games and AI tools for game developers.</p>
 </section>
-<h2>Products</h2>
-<ul>
-<li><a href="localnpc/"><strong>LocalNPC</strong></a>: Offline voice conversations with NPCs for Unity on Windows.</li>
-</ul>
+<section aria-labelledby="products">
+<h2 id="products">Products</h2>
+<div class="product-grid">
+<article class="card product-card">
+<img src="images/localnpc-thumb.png" width="640" height="360" loading="lazy" alt="A LocalNPC sample scene in Unity: a 3D head with a conversation box in which the player asks who the character is and the NPC answers.">
+<div class="product-body">
+<h3>LocalNPC</h3>
+<p>Offline voice conversations with NPCs for Unity on Windows.</p>
+<a class="button" href="localnpc/">View LocalNPC</a>
+</div>
+</article>
+</div>
+</section>
 </main>
 <footer class="site-footer">
   <div class="wrap">
