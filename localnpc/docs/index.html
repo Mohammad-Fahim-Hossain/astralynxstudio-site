@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>LocalNPC Documentation | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / LocalNPC Documentation</p><article class="doc"><h1 id="localnpc-documentation">LocalNPC Documentation</h1>
+<p>Welcome to the <strong>LocalNPC</strong> developer manual. LocalNPC is an on-device conversational NPC framework for Unity 6000.0 or newer on 64-bit Windows. Speech recognition (Whisper) and the language model (Qwen 2.5, through llama.cpp) run on the player's PC, with no cloud service and no per-token API costs. LocalNPC sends no data about the player: its only network use is downloading the model files from Hugging Face (huggingface.co) over HTTPS, with the server's certificate checked and each file checked with SHA-256 (and the licence links in the Editor). LocalNPC runs no server of its own; Hugging Face sees the IP address of the computer that downloads. (Checked by reading the code; no network capture was made.) The NPC speaks with the Windows system voice (OneCore, SAPI 5 as last fallback); nothing is downloaded for it, and with no voice installed the NPC answers in text only.</p>
+<hr>
+<h2 id="-table-of-contents">📚 Table of Contents</h2>
+<div class="table-wrap"><table><thead><tr><th>Guide</th><th>Description</th><th>Target Audience</th></tr></thead><tbody><tr><td><a href="01-quick-start.html"><strong>1. Quick Start</strong></a></td><td>Set up a talking NPC in a new project</td><td>New Developers</td></tr><tr><td><a href="02-installation-requirements.html"><strong>2. Installation &amp; Requirements</strong></a></td><td>Hardware requirements, Unity version, and project settings</td><td>Technical Leads &amp; IT</td></tr><tr><td><a href="03-personality-writing-guide.html"><strong>3. Personality Writing Guide</strong></a></td><td>System prompt craft, few-shot examples, and token constraints</td><td>Writers &amp; Game Designers</td></tr><tr><td><a href="04-choosing-model-preset.html"><strong>4. Choosing a Model Preset</strong></a></td><td>Compare the Balanced (1.5B, default) and Fast (0.5B, low-end PCs) tiers</td><td>Producers &amp; Designers</td></tr><tr><td><a href="05-api-reference.html"><strong>5. API Reference</strong></a></td><td>Comprehensive public C# contracts and code samples</td><td>Programmers</td></tr><tr><td><a href="06-performance-tuning.html"><strong>6. Performance Tuning</strong></a></td><td>CPU thread allocation, context windows, and latency budgets</td><td>Optimization Engineers</td></tr><tr><td><a href="07-lip-sync-setup.html"><strong>7. Lip Sync Setup</strong></a></td><td>A jaw that opens with the loudness of the voice, and blendshape mapping with an ARKit preset for viseme weights from your own code or the optional uLipSync bridge (not yet tested on a real character)</td><td>Technical Artists</td></tr><tr><td><a href="08-shipping-your-game.html"><strong>8. Shipping Your Game</strong></a></td><td>Build pipeline, standalone Windows, and player deployment</td><td>Build Engineers</td></tr><tr><td><a href="09-offline-kiosk-deployment.html"><strong>9. Offline &amp; Kiosk Deployment</strong></a></td><td>Pre-bundled StreamingAssets, air-gapped systems, and kiosk microphone setup (Push-to-Talk planned for v1.1)</td><td>Enterprise &amp; Exhibits</td></tr><tr><td><a href="10-language-support.html"><strong>10. Language Support</strong></a></td><td>Multilingual architecture seam and custom phonemizers</td><td>Localization Teams</td></tr><tr><td><a href="11-troubleshooting.html"><strong>11. Troubleshooting</strong></a></td><td>Diagnostic solutions for common audio, model, and DLL issues</td><td>All Developers</td></tr></tbody></table></div>
+<p><strong>Support:</strong> email <strong>localnpcsupport@gmail.com</strong> (what to include: <a href="11-troubleshooting.html#getting-help">Getting help</a>).</p>
+<hr>
+<h2 id="-architecture-pipeline-in-one-line">⚡ Architecture Pipeline in One Line</h2>
+<pre><code>Microphone → VAD (energy; the downloaded voice activity model is not used) → Speech-to-Text (Whisper) → LLM (Qwen 2.5) → Sentence Splitter → TTS (Windows system voice) → Audio Queue (+ optional jaw by loudness)</code></pre>
+<p>The core streaming innovation: <strong>each sentence begins synthesizing and speaking out loud while the language model is still generating subsequent tokens.</strong> Reply time: Typically about 3 seconds after you stop talking: a 0.9 second end-of-speech wait plus about 2 seconds (measured 2.04 to 2.25 s on one laptop, Balanced preset, five voice turns). It depends on your hardware, and we have not measured other machines yet.</p></article><p class="source-note">This page is the file <code>docs/index.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/index.md</code>).</p><nav class="pager" aria-label="Documentation pages"><span></span><a href="01-quick-start.html">Quick Start Guide &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Shipping Your Game Guide | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Shipping Your Game Guide</p><article class="doc"><h1 id="shipping-your-game-guide">Shipping Your Game Guide</h1>
+<p>How to build, package, and deploy standalone players using LocalNPC.</p>
+<hr>
+<h2 id="-build-pipeline-overview">🏗 Build Pipeline Overview</h2>
+<p>LocalNPC provides automated pre-processing and post-processing build pipeline integration:</p>
+<ol><li><p><strong><code>BuildPreprocessor</code>:</strong></p>
+<ul><li>Validates that the build target is 64-bit Windows (<code>StandaloneWindows64</code>).</li><li>Verifies that all eight native libraries (<code>llamalib_win-x64_avx2.dll</code> and <code>llamalib_win-x64_noavx.dll</code> for the language model; <code>ggml-base.dll</code>, <code>ggml.dll</code>, <code>whisper.dll</code>, <code>ggml-cpu-haswell.dll</code> and <code>ggml-cpu-x64.dll</code> for speech-to-text; <code>localnpc_winspeech.dll</code> for the voice) exist, are real binaries (not un-pulled Git LFS pointer stubs), and have the SHA-256 the package was tested with.</li><li>If any <code>NpcRuntimeConfig</code> uses <code>StreamingAssets</code> mode, verifies all required models are present before spending time compiling.</li></ul></li><li><p><strong><code>BuildPostprocessor</code>:</strong></p>
+<ul><li>Does not copy the native libraries. Unity places them in <code>{ProjectName}_Data/Plugins/x86_64/</code>, and LocalNPC loads them from that folder only. The language model, speech-to-text and the voice library run inside the game's process; no <code>.exe</code> is shipped or started.</li><li>Emits <code>LocalNPC_BuildManifest.json</code> documenting exact package versions, platform, the SHA-256 checksum of each native library, and pre-bundled models for support triage.</li></ul></li></ol>
+<hr>
+<h2 id="-model-distribution-modes">📦 Model Distribution Modes</h2>
+<p>In <code>NpcRuntimeConfig</code>, set <strong>Storage Mode</strong>:</p>
+<h3 id="mode-1-persistentdatapath-recommended-for-online-steamepic-releases">Mode 1: <code>PersistentDataPath</code> (Recommended for Online Steam/Epic Releases)</h3>
+<ul><li><strong>Installer Size:</strong> Without the model files. The size of a build without models is not measured yet.</li><li><strong>First-Run UX:</strong> Game launches, detects missing models, and displays the First-Run Provisioning dialog (see <code>DemoSceneController</code>). Models download to <code>%LocalAppData%\..\LocalLow\&lt;Company&gt;\&lt;Game&gt;\LocalNPC\models</code>.</li><li><strong>Patch Friendly:</strong> Game updates don't require re-downloading the model files (1.20 GB for the default Balanced preset, 569 MB for Fast).</li></ul>
+<h3 id="mode-2-streamingassets-recommended-for-offlinekioskdvdretail">Mode 2: <code>StreamingAssets</code> (Recommended for Offline/Kiosk/DVD/Retail)</h3>
+<ul><li><strong>Installer Size:</strong> The model files are added to the build: 1.20 GB for the default Balanced preset, 569 MB for Fast (file sizes in the model catalogue).</li><li><strong>First-Run UX:</strong> Zero download required. Game plays immediately offline.</li><li><strong>Setup:</strong> Models must be placed in <code>Assets/StreamingAssets/LocalNPC/</code>. <code>BuildPreprocessor</code> validates their presence before building.</li></ul>
+<hr>
+<h2 id="-release-checklist-before-building">📋 Release Checklist Before Building</h2>
+<ul><li>[ ] Target Platform is set to <strong>PC, Mac &amp; Linux Standalone</strong> -&gt; <strong>Target Platform: Windows</strong>, <strong>Architecture: Intel 64-bit</strong>.</li><li>[ ] Tested at least one full conversation turn in a standalone build (Mono or IL2CPP).</li><li>[ ] Checked <code>LocalNPC_BuildManifest.json</code> generated in your build output folder.</li><li>[ ] The players' PCs run Windows 10 or 11. The voice is a Windows system voice and is not part of your build: without a voice for the NPC's language, the NPC answers in text only (see <a href="11-troubleshooting.html">Troubleshooting</a>).</li></ul></article><p class="source-note">This page is the file <code>docs/08-shipping-your-game.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/08-shipping-your-game.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="07-lip-sync-setup.html">&larr; Lip Sync Setup Guide</a><a href="09-offline-kiosk-deployment.html">Offline &amp; Kiosk Deployment &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

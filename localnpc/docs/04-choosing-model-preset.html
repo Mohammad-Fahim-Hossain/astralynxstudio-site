@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Choosing a Model Preset | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Choosing a Model Preset</p><article class="doc"><h1 id="choosing-a-model-preset">Choosing a Model Preset</h1>
+<p>LocalNPC provides two pre-tuned model tiers to balance reasoning capability, download footprint, and hardware requirements.</p>
+<p>The <strong>Quality</strong> preset is not available in v1.0. The value still exists so that saved configs load, but a config that uses it fails with a "not available in v1.0" error. Choose <code>Balanced</code> or <code>Fast</code>.</p>
+<p><strong>Balanced</strong> is the default and recommended preset. <strong>Fast</strong> is the option for low-end PCs. Balanced's 1.5B model has run in a Windows player build (Mono and IL2CPP, without a window, one PC, one run each). Not measured yet for Balanced: a minimum RAM, a windowed player, a CPU without AVX2, and a download through the Setup Wizard window.</p>
+<hr>
+<h2 id="-model-preset-matrix">📊 Model Preset Matrix</h2>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Fast (low-end PCs)</th><th>Balanced (Default)</th></tr></thead><tbody><tr><td><strong>LLM Model</strong></td><td>Qwen2.5-0.5B-Instruct</td><td>Qwen2.5-1.5B-Instruct</td></tr><tr><td><strong>Quantisation</strong></td><td>Q4_K_M (4-bit)</td><td>Q4_K_M (4-bit)</td></tr><tr><td><strong>Download Size</strong></td><td>569 MB</td><td>1.20 GB</td></tr><tr><td><strong>RAM</strong></td><td>about 473 MB for one NPC (measured in the Editor on one PC, one run)</td><td>1960 MB (Mono) and 1969 MB (IL2CPP) process working set with the model loaded (player without a window, one run each)</td></tr><tr><td><strong>System Minimum RAM</strong></td><td>not measured yet</td><td>not measured yet</td></tr><tr><td><strong>Token Generation Speed</strong></td><td>50.4 to 55.8 tok/s in a player without a window; 28.4 and 36.8 tok/s in a windowed player</td><td>21.0 and 23.7 tok/s in a player without a window (from a 12-token reply)</td></tr><tr><td><strong>Time to First Output (LLM step)</strong></td><td>262 to 356 ms on the first turn; 109 to 169 ms on the second</td><td>606 and 622 ms on the first turn; 240 and 273 ms on the second</td></tr><tr><td><strong>Best For</strong></td><td>Low-end PCs, fast turnaround. Windows x64 only in v1.0</td><td>Desktop PCs where the slower speed is acceptable. Windows x64 only in v1.0</td></tr></tbody></table></div>
+<p><em>Measured figures: one PC (Intel Core i7-8750H, 16 GB RAM, Windows 11), Unity 6000.3.10f1, Windows player builds (Mono and IL2CPP), one run per figure, LLM step only. Download sizes are the file sizes in the model catalogue, in decimal units as the Setup Wizard shows them: 491 MB (0.5B LLM) or 1.12 GB (1.5B LLM), plus the speech-to-text file below.</em></p>
+<p><em>Note: In both presets, the speech suite remains identical: Whisper tiny.en speech-to-text (78 MB). No voice activity model is downloaded: v1.0 detects speech with the built-in energy VAD. The voice is the Windows system voice, so there is no voice file to download.</em></p>
+<hr>
+<h2 id="-side-by-side-response-comparison">🧪 Side-by-Side Response Comparison</h2>
+<h3 id="prompt-amp-personality">Prompt &amp; Personality</h3>
+<blockquote><p><strong>Role:</strong> Barnaby the Merchant<br>
+<strong>User Question:</strong> <em>"I only have 5 gold coins. What can I buy from you?"</em></p></blockquote>
+<h4 id="fast-preset-05b-low-end-pcs">Fast Preset (0.5B), low-end PCs</h4>
+<blockquote><p><em>"With only five gold coins, you cannot afford my potions or steel, friend. Perhaps come back after doing some odd jobs around the docks."</em><br>
+<strong>Generation Time:</strong> not measured. This reply is an illustration; there is no record that it came from a real run of the Fast preset.</p></blockquote>
+<h4 id="balanced-preset-15b-the-default">Balanced Preset (1.5B), the default</h4>
+<blockquote><p><em>"Five gold is a bit light for my wares, traveller. The cheapest remedy I have is a small healing salve for ten gold, but bring me five rat tails from the cellar and we might strike a deal."</em><br>
+<strong>Generation Time:</strong> not measured. This reply is an illustration; it was not produced by a real run of the Balanced preset.</p></blockquote>
+<hr>
+<h2 id="-how-to-switch-presets-in-unity">🛠 How to Switch Presets in Unity</h2>
+<ol><li>Locate your <code>NpcRuntimeConfig</code> asset in the Project window.</li><li>In the Inspector, select the preset: <code>Fast</code> or <code>Balanced</code> (a new config uses <code>Balanced</code>).</li><li>Open <strong>Tools &gt; LocalNPC &gt; Setup Wizard</strong> or <strong>Tools &gt; LocalNPC &gt; Model Manager</strong>.</li><li>In the Setup Wizard, select the same preset and click <strong>Download &amp; Provision Fast Suite</strong> or <strong>Download &amp; Provision Balanced Suite</strong> (the button names the selected preset) to verify that the corresponding model weights are downloaded to your local cache. If all models of the preset are already installed, the wizard shows <strong>Re-verify Suite</strong> instead.</li></ol></article><p class="source-note">This page is the file <code>docs/04-choosing-model-preset.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/04-choosing-model-preset.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="03-personality-writing-guide.html">&larr; Personality Writing Guide</a><a href="05-api-reference.html">Public API Reference &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

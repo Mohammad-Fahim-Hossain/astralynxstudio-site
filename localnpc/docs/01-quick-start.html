@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Quick Start Guide | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Quick Start Guide</p><article class="doc"><h1 id="quick-start-guide">Quick Start Guide</h1>
+<p>Get a talking, listening NPC running in your Unity project. The QuickStart NPC is a capsule with a mouth box that opens with the loudness of its voice; the Shopkeeper and Kiosk scenes have no moving mouth. The three sample scenes draw in the Built-in Render Pipeline and in URP. HDRP is not supported.</p>
+<p>The QuickStart folder also holds <code>QuickStartHead.unity</code>: the QuickStart setup with the sample head (<code>Samples/Head/LocalNPC Head.prefab</code>) in place of the capsule, and its own NPC to match the head: Corin of Hollowmere, a man, who speaks with the Microsoft David voice (or the default voice when David is not installed). The head opens its jaw with the loudness of the voice; other mouth shapes need the optional uLipSync package, and the head does not blink.</p>
+<hr>
+<h2 id="-setup">🚀 Setup</h2>
+<h3 id="step-1-open-the-setup-wizard">Step 1: Open the Setup Wizard</h3>
+<p>From the Unity menu bar, select:</p>
+<pre><code>Tools → LocalNPC → Setup Wizard</code></pre>
+<p>The wizard will verify your project settings (Unity version, 64-bit architecture). It has three tabs: <strong>1. Environment &amp; Hardware</strong>, <strong>2. Model Provisioning</strong> and <strong>3. Ready to Converse</strong>.</p>
+<h3 id="step-2-download-the-balanced-preset-models">Step 2: Download the Balanced Preset Models</h3>
+<ol><li>In the <strong>Setup Wizard</strong>, tab <strong>2. Model Provisioning</strong>, select <strong>Balanced Preset (Recommended)</strong>, the default (1.20 GB of model files). On a low-end PC, select <strong>Fast Preset (low-end PCs)</strong> instead (569 MB).</li><li>Click <strong>Download &amp; Provision Balanced Suite</strong> (with Fast selected, the button says <strong>Download &amp; Provision Fast Suite</strong>).</li><li>The wizard downloads these files from Hugging Face (huggingface.co), over HTTPS with the server's certificate checked, and checks each one with SHA-256:
+<ul><li><strong>LLM:</strong> <code>qwen2.5-1.5b-instruct-q4_k_m.gguf</code> (1.12 GB; with Fast, <code>qwen2.5-0.5b-instruct-q4_k_m.gguf</code>, 491 MB)</li><li><strong>STT:</strong> <code>ggml-tiny.en.bin</code> (Whisper)</li></ul></li></ol>
+<p>No voice activity model is downloaded: speech is detected by the built-in energy VAD. The voice needs no download. The NPC speaks with the Windows system voice (for en-US: Microsoft Mark first, then Microsoft Zira, then Microsoft David, then any other en-US voice, then a voice of another English region such as en-GB; SAPI 5 as the last fallback).</p>
+<p>The same files can be downloaded one by one in <strong>Tools &gt; LocalNPC &gt; Model Manager</strong>. The speech-to-text model is the entry of the model catalogue shown there.</p>
+<h3 id="step-3-add-an-npc-to-your-scene">Step 3: Add an NPC to Your Scene</h3>
+<ol><li><p>Create a 3D capsule character or character model:</p>
+<pre><code>GameObject → 3D Object → Capsule</code></pre></li><li><p>Add the <code>NpcAgent</code> component to the GameObject:</p>
+<pre><code>Add Component → LocalNPC → NPC Agent</code></pre></li><li><p>Add an <code>AudioSource</code> and a <code>SpeechAudioQueue</code> to the same GameObject, so the NPC can be heard:</p>
+<pre><code>Add Component → Audio → Audio Source</code></pre>
+<p>Then click <strong>Add AudioQueue</strong> in the <code>NpcAgent</code> Inspector. These two components are not added automatically.</p></li><li><p>Create or assign an <code>NpcPersonality</code> asset:</p>
+<ul><li>Right click in Project window: <code>Create → LocalNPC → Personality</code></li><li>Name it <code>CompanionPersonality</code>.</li><li>Set <strong>Display Name</strong>: <code>Companion</code></li><li>Set <strong>System Prompt</strong>: <code>You are a helpful, witty companion traveling with the player. Keep replies to one or two sentences.</code></li><li>Set <strong>Greeting</strong>: <code>Hello there! Where are we heading next?</code></li><li>Drag <code>CompanionPersonality</code> into the <strong>Personality</strong> field of <code>NpcAgent</code>.</li></ul></li></ol>
+<h3 id="step-4-turn-on-listening">Step 4: Turn On Listening</h3>
+<ol><li>In the <code>NpcAgent</code> Inspector, under <strong>Lifecycle &amp; Startup</strong>, tick <strong>Listen On Start</strong> (leave <strong>Prewarm On Start</strong> ticked). From code, call <code>StartListening()</code> after <code>PrewarmAsync()</code> instead.</li><li>That is all the microphone setup. <code>NpcAgent</code> starts the microphone itself when it starts listening and stops it on <code>StopListening()</code>. <strong>Do not add a <code>MicrophoneCapture</code> to another GameObject</strong>: two captures would record the same device.</li><li>In Windows, open <strong>Settings &gt; Privacy &amp; security &gt; Microphone</strong> and allow desktop apps to use the microphone.</li><li>Optional: add <code>SubtitleHud</code> (from the samples; after you import the <code>.unitypackage</code> it is at <code>Assets/LocalNPC/Samples/SubtitleHud.cs</code>) to an empty GameObject for on-screen dialogue display.</li></ol>
+<p>If the microphone cannot be used, <code>NpcAgent</code> raises <code>OnError</code> with the code <code>MicrophoneUnavailable</code> and a message that says why. The agent stays in the <code>Listening</code> state. See the <a href="11-troubleshooting.html">Troubleshooting Playbook</a>.</p>
+<p>Only one <code>NpcAgent</code> listens to the microphone at a time; a second one logs a warning and gets no voice input. While the NPC is speaking, the microphone is ignored.</p>
+<p>Tip: In a noisy room or on loudspeakers, use a headset (the NPC's own voice can come back through the speakers).</p>
+<h3 id="step-5-press-play-amp-talk">Step 5: Press Play &amp; Talk</h3>
+<ol><li>Click <strong>Play</strong> in the Unity Editor.</li><li>Speak clearly into your microphone: <em>"What can you help me with?"</em></li><li>The NPC will transcribe your voice, generate a response using the local language model (1.5B with the default Balanced preset, 0.5B with Fast), and reply out loud through the AudioSource!</li></ol>
+<p>If Windows has no voice for the NPC's language, the NPC answers in text only and the Console shows one warning that says how to add a voice. See <a href="11-troubleshooting.html">Troubleshooting</a>.</p>
+<p>Speech-to-text runs inside the Unity process, through the whisper.cpp 1.9.5 DLLs in the package. There is no separate program to install or start.</p>
+<p>If the speech model or one of these DLLs cannot be loaded, <code>NpcAgent</code> raises <code>OnError</code> once. The message says what is wrong and what to do, and contains the sentence <strong>"Speech input is off. Text input still works."</strong> The NPC then goes to <code>Idle</code> and answers typed input as usual. A missing speech model is downloaded in <strong>Tools &gt; LocalNPC &gt; Model Manager</strong>. See the <a href="11-troubleshooting.html">Troubleshooting Playbook</a>.</p>
+<hr>
+<h2 id="-testing-without-a-microphone">💡 Testing Without a Microphone</h2>
+<p>If you don't have a microphone plugged in:</p>
+<ol><li>Select your NPC GameObject in the Hierarchy during Play Mode.</li><li>In the <code>NpcAgentInspector</code>, locate the <strong>Test With Typed Input (No Microphone Required)</strong> box.</li><li>Type any question and click <strong>Send Prompt</strong>. The turn executes immediately with full audio and subtitles.</li></ol></article><p class="source-note">This page is the file <code>docs/01-quick-start.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/01-quick-start.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="index.html">&larr; LocalNPC Documentation</a><a href="02-installation-requirements.html">Installation &amp; System Requirements &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

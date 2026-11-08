@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Offline &amp; Kiosk Deployment | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Offline &amp; Kiosk Deployment</p><article class="doc"><h1 id="offline-amp-kiosk-deployment">Offline &amp; Kiosk Deployment</h1>
+<p>This guide covers deploying <code>LocalNPC</code> in air-gapped, offline, kiosk, and museum exhibit environments where internet access is unavailable or prohibited.</p>
+<hr>
+<h2 id="1-overview-amp-architecture">1. Overview &amp; Architecture</h2>
+<p><code>LocalNPC</code> runs on the PC: once the models and libraries are on the local disk, <strong>LocalNPC makes no network calls</strong> (checked by reading the code; no network capture was made). Before that, the model files come from Hugging Face (huggingface.co), over HTTPS with the server's certificate checked, and each is checked with SHA-256; LocalNPC runs no server of its own. For an air-gapped kiosk, download the files on a networked machine (Setup Wizard or Model Manager) and copy them to the kiosk. Voice recognition (STT), reasoning (LLM) and voice activity detection (VAD) execute completely in-memory on the CPU. LocalNPC v1.0 uses no GPU: only CPU libraries ship. Voice synthesis (TTS) uses a Windows system voice installed on the machine; LocalNPC downloads no voice. Whether Windows itself uses the network for these voices has not been checked.</p>
+<p>For production kiosks, trade show booths, and air-gapped enterprise machines, you have two provisioning strategies:</p>
+<ol><li><strong>Pre-Bundled <code>StreamingAssets</code> Mode (Recommended for Kiosks):</strong> Models ship directly inside the standalone game installer. The application is playable immediately upon launch with zero setup.</li><li><strong>Offline Local Cache Staging:</strong> Models are copied to the machine's <code>LocalApplicationData</code> or <code>persistentDataPath</code> directory during OS/hardware imaging.</li></ol>
+<hr>
+<h2 id="2-pre-bundling-models-in-streamingassets">2. Pre-Bundling Models in <code>StreamingAssets</code></h2>
+<p>To bundle models directly into your standalone build:</p>
+<h3 id="step-1-copy-models-to-streamingassetslocalnpc">Step 1: Copy Models to <code>StreamingAssets/LocalNPC/</code></h3>
+<p>Place your model files into the Unity project's <code>Assets/StreamingAssets/LocalNPC/</code> folder matching the active runtime preset (e.g., <code>Balanced</code>, the default):</p>
+<pre><code>Assets/
+└── StreamingAssets/
+    └── LocalNPC/
+        ├── qwen2.5-1.5b-instruct-q4_k_m.gguf
+        └── ggml-tiny.en.bin</code></pre>
+<div class="callout callout-note"><p class="callout-title">Note</p><p>No voice file goes into <code>StreamingAssets</code>. The NPC speaks with a Windows system voice, so every kiosk PC needs Windows 10 or 11 with a voice for the NPC's language (<strong>Settings &gt; Time &amp; language &gt; Speech</strong>). Without one the NPC answers in text only and logs one warning. No voice activity model is needed: v1.0 detects speech with the built-in energy VAD.</p>
+<p>In StreamingAssets mode, the language model in the download folder is used first if one is there. For a kiosk, keep only the bundled copy.</p></div>
+<h3 id="step-2-configure-npcruntimeconfig">Step 2: Configure <code>NpcRuntimeConfig</code></h3>
+<ol><li>Select your <code>NpcRuntimeConfig</code> asset in the Unity Project window.</li><li>In the Inspector, set <strong>Model Storage Mode</strong> to:
+<pre><code>StreamingAssets</code></pre></li><li>The build pipeline will automatically validate the presence and checksums of these files before compiling.</li></ol>
+<h3 id="step-3-automated-build-verification">Step 3: Automated Build Verification</h3>
+<p><code>LocalNPC</code> includes a build preprocessor (BuildPreprocessor.cs) that validates:</p>
+<ul><li>Architecture is set to <strong>64-bit Windows (<code>StandaloneWindows64</code>)</strong>.</li><li>The <code>StreamingAssets/LocalNPC</code> folder contains non-zero byte models matching the active preset.</li><li>All eight native libraries (the two <code>llamalib_win-x64_*.dll</code> files for the language model, the five whisper.cpp files for speech-to-text and <code>localnpc_winspeech.dll</code> for the voice) are present and have the SHA-256 the package was tested with.</li></ul>
+<p>If any required model is missing from <code>StreamingAssets</code>, the build fails immediately in the Unity Editor with actionable remediation instructions, preventing broken kiosk builds.</p>
+<hr>
+<h2 id="3-post-build-file-structure-for-kiosks">3. Post-Build File Structure for Kiosks</h2>
+<p>When you build a Standalone Windows player, the postprocessor (BuildPostprocessor.cs) adds a build manifest next to the executable. The build folder then looks like this:</p>
+<pre><code>BuildDirectory/
+├── YourGame.exe
+├── LocalNPC_BuildManifest.json      &lt;-- Audit trail &amp; SHA-256 model checksum manifest
+├── UnityPlayer.dll
+├── MonoBleedingEdge/
+└── YourGame_Data/
+    ├── Plugins/
+    │   └── x86_64/
+    │       ├── llamalib_win-x64_avx2.dll    &lt;-- Language model, loaded on CPUs with AVX2
+    │       ├── llamalib_win-x64_noavx.dll   &lt;-- Language model, loaded on CPUs without AVX2
+    │       ├── ggml-base.dll                &lt;-- Speech-to-text (whisper.cpp 1.9.5)
+    │       ├── ggml.dll                     &lt;-- Speech-to-text
+    │       ├── whisper.dll                  &lt;-- Speech-to-text
+    │       ├── ggml-cpu-haswell.dll         &lt;-- Speech-to-text, loaded on CPUs with AVX2
+    │       ├── ggml-cpu-x64.dll             &lt;-- Speech-to-text, loaded on other CPUs (slow)
+    │       └── localnpc_winspeech.dll       &lt;-- Voice (Windows system voices)
+    └── StreamingAssets/
+        └── LocalNPC/
+            ├── qwen2.5-1.5b-instruct-q4_k_m.gguf
+            └── ggml-tiny.en.bin</code></pre>
+<h3 id="build-manifest-verification">Build Manifest Verification</h3>
+<p>The generated <code>LocalNPC_BuildManifest.json</code> provides an exact checksum audit trail:</p>
+<pre><code class="language-json">{
+  "package": {
+    "name": "com.localnpc.core",
+    "version": "1.0.0",
+    "buildGuideVersion": "4.0"
+  },
+  "buildSummary": {
+    "buildDateUtc": "2026-10-15T12:00:00.0000000Z",
+    "platform": "StandaloneWindows64",
+    "unityVersion": "6000.3.10f1",
+    "executablePath": "C:/Builds/Kiosk/YourGame.exe",
+    "scriptingBackend": "Mono2x",
+    "allowUnsafeCode": false
+  },
+  "nativePlugins": [
+    { "filename": "llamalib_win-x64_avx2.dll", "fileSizeBytes": 13541888, "sha256": "e1f82db0e2883ba6a21420715f00c9e1de57daff89e150073e8b6979ec93dc91" },
+    { "filename": "llamalib_win-x64_noavx.dll", "fileSizeBytes": 13371392, "sha256": "9ab768752148f4d28632683f6fb4efa475a8ee2d1d55813215f82c1bb7b25d33" },
+    { "filename": "ggml-base.dll", "fileSizeBytes": 693248, "sha256": "970abcbe367a31f03182725a3e7acc90b0974dc34bdec4c220ef8e170e55a881" },
+    { "filename": "ggml.dll", "fileSizeBytes": 62464, "sha256": "f0f940e6789651726fcf7d377d2c733cdf36df2abdcf4b55c57cc9dd7b418d4f" },
+    { "filename": "whisper.dll", "fileSizeBytes": 1370112, "sha256": "6089110fe007dcb650fc4578232adfcf06316e7dc7eabefd7e1a74e1bcd39fa7" },
+    { "filename": "ggml-cpu-haswell.dll", "fileSizeBytes": 1010688, "sha256": "5c9451f58c46069d831da00ca04ea68113411bec53b2a5bff747ad58ce6cc3bd" },
+    { "filename": "ggml-cpu-x64.dll", "fileSizeBytes": 866816, "sha256": "b6bb63272a9eb1d9e0855fa5ca8c432e2e40c6fba15a73c50bff5217c68ea4fa" },
+    { "filename": "localnpc_winspeech.dll", "fileSizeBytes": 196608, "sha256": "5c506198094011f944c0f4e178a4e0cb3e196684c56cf3c9e81f668b2069bc1f" }
+  ],
+  "streamingAssetsModels": [
+    { "filename": "qwen2.5-1.5b-instruct-q4_k_m.gguf", "fileSizeBytes": 1117320736, "sha256": "6a1a..." }
+  ],
+  "configuredRuntimePresets": [
+    { "assetName": "KioskRuntimeConfig", "preset": "Balanced", "storageMode": "StreamingAssets", "threads": 0 }
+  ]
+}</code></pre>
+<p>The <code>sha256</code> of a native library is the pin the package checks at load time: SHA-256 without the parts that Authenticode signing changes, so a library you sign keeps it. The <code>sha256</code> of a model is the SHA-256 of the whole file. <code>streamingAssetsModels</code> lists the files directly in <code>StreamingAssets/LocalNPC</code>, and <code>configuredRuntimePresets</code> lists every <code>NpcRuntimeConfig</code> asset in the project.</p>
+<hr>
+<h2 id="4-kiosk-interaction-design-amp-ambient-noise">4. Kiosk Interaction Design &amp; Ambient Noise</h2>
+<p>In public venues (museums, trade shows, retail kiosks), background crowd noise and echo can falsely trigger an open-microphone Voice Activity Detector (VAD).</p>
+<h3 id="listening-in-v10-the-built-in-microphone">Listening in v1.0: the Built-In Microphone</h3>
+<p>In v1.0 a kiosk listens like any other scene: <code>NpcAgent.StartListening()</code> starts the agent's built-in microphone, and an utterance ends after 900 ms of silence. The <code>03_Kiosk</code> sample works this way: the visitor clicks <strong>Start Voice</strong> and asks.</p>
+<p>The microphone's noise settings (speech threshold, 180 ms minimum speech, 900 ms of silence, 500 ms pre-roll, input gain) and the 150 ms echo tail are fixed in the code. They were tuned by ear in one room only, not in a crowded or loud venue. Test them in your venue before you deploy.</p>
+<h3 id="push-to-talk-not-connected-in-v10">Push-to-Talk: Not Connected in v1.0</h3>
+<p><code>PushToTalkController</code> exists, but in v1.0 it is not connected to the microphone. It records only the audio that your own code passes to <code>PushAudioFrame</code>, so holding its button sends nothing to the NPC. Connecting it to the microphone is planned for v1.1. The API, for reference:</p>
+<pre><code class="language-csharp">using UnityEngine;
+using LocalNPC;
+using LocalNPC.Audio;
+
+public class KioskPhysicalButton : MonoBehaviour
+{
+    [SerializeField] private NpcAgent _agent;
+    [SerializeField] private PushToTalkController _ptt;
+
+    // Connect to physical arcade button, arcade encoder, or touch button
+    public void OnPhysicalButtonPressed()
+    {
+        _ptt.SetPressed(true);
+    }
+
+    public void OnPhysicalButtonReleased()
+    {
+        _ptt.SetPressed(false);
+    }
+}</code></pre>
+<h3 id="physical-microphone-selection">Physical Microphone Selection</h3>
+<p>For a kiosk we recommend a <strong>headset</strong> or a <strong>directional microphone</strong> (cardioid or gooseneck) aimed at the visitor's mouth. In v1.0 the microphone listens without a button, so the microphone is your main protection against crowd noise and against the NPC hearing its own voice from the speakers.</p>
+<ul><li>Avoid omnidirectional array microphones built into kiosk monitors, as they capture ambient reflections.</li><li>In Windows Sound Settings, disable automatic gain control (AGC) and set the microphone input level by ear (no level was tested).</li></ul>
+<hr>
+<h2 id="5-first-run-health-check-amp-auto-recovery">5. First-Run Health Check &amp; Auto-Recovery</h2>
+<p>For unattended kiosks running 24/7:</p>
+<ol><li><strong>Microphone Unplugged Recovery:</strong> <code>LocalNPC</code> automatically polls for audio device disconnection every 2 seconds. If a visitor pulls the microphone cable, <code>MicrophoneCapture</code> fires <code>OnDeviceLost</code> and re-attaches gracefully as soon as the device is reconnected (<code>OnDeviceRecovered</code>).</li><li><strong>Watchdog Heartbeat:</strong> Query <code>_agent.IsReady</code> and <code>_agent.State</code>. If the kiosk is left in <code>Speaking</code> or <code>Thinking</code> state for longer than 30 seconds due to an unforeseen hardware fault, invoke <code>_agent.Interrupt()</code> and <code>_agent.ResetConversation()</code>.</li><li><strong>Session Reset Timeout:</strong> Use a countdown timer to reset conversation history when no visitor has spoken to the NPC for 60 seconds:
+<pre><code class="language-csharp">void Update()
+{
+    if (Time.time - _lastInteractionTime &gt; 60f &amp;&amp; _agent.State == NpcState.Idle)
+    {
+        _agent.ResetConversation();
+        _lastInteractionTime = Time.time;
+    }
+}</code></pre></li></ol></article><p class="source-note">This page is the file <code>docs/09-offline-kiosk-deployment.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/09-offline-kiosk-deployment.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="08-shipping-your-game.html">&larr; Shipping Your Game Guide</a><a href="10-language-support.html">Language Support &amp; Multilingual Architecture &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

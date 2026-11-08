@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Lip Sync Setup Guide | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Lip Sync Setup Guide</p><article class="doc"><h1 id="lip-sync-setup-guide">Lip Sync Setup Guide</h1>
+<p>How to set up mouth movement for 3D characters in LocalNPC.</p>
+<hr>
+<h2 id="-what-you-get-in-v10">👄 What You Get in v1.0</h2>
+<p>LocalNPC has three mouth components. Only the first one moves a mouth with nothing else added:</p>
+<ol><li><strong><code>AmplitudeLipSync</code>:</strong> Opens and closes a jaw by the loudness of the NPC's voice. It needs no extra package. It does not make a mouth shape for each sound.</li><li><strong><code>BlendShapeVisemeMapper</code>:</strong> Turns viseme weights into shape key weights on your mesh. One sound can move several shape keys. It needs something that gives it viseme weights: your own code, or the uLipSync bridge.</li><li><strong><code>ULipSyncBridge</code>:</strong> Feeds the NPC's voice to the third-party uLipSync package and passes what uLipSync hears to the mapper. LocalNPC does not ship uLipSync. The bridge compiles with uLipSync installed. The code that feeds sound to uLipSync is tested with fake audio. The bridge itself has not run on a real character yet.</li></ol>
+<p>The QuickStart sample uses <code>AmplitudeLipSync</code>: the capsule NPC has a child "Mouth", a dark box that tips open with the loudness of the voice. The Shopkeeper and Kiosk scenes have no moving mouth.</p>
+<p>When Windows has no voice for the NPC's language, the NPC answers in text only, nothing plays, and the mouth does not move.</p>
+<hr>
+<h2 id="-3-step-setup-with-amplitudelipsync">🎨 3-Step Setup with <code>AmplitudeLipSync</code></h2>
+<h3 id="step-1-add-amplitudelipsync">Step 1: Add AmplitudeLipSync</h3>
+<p>Select the NPC's GameObject (the one with the <code>SpeechAudioQueue</code>) or a child of it, for example the head:</p>
+<pre><code>Add Component, then search for Amplitude Lip Sync</code></pre>
+<p>Leave <strong>Audio Source</strong> (<code>_audioSource</code>, under <strong>Audio &amp; Mesh Targets</strong>) empty. The NPC's voice plays one sentence on the NPC's <code>AudioSource</code> and the next on a second <code>AudioSource</code> that the <code>SpeechAudioQueue</code> adds when the scene starts. With the field empty, <code>AmplitudeLipSync</code> finds the <code>SpeechAudioQueue</code> on its own GameObject or a parent and reads both sources.</p>
+<p><code>AmplitudeLipSync</code> needs an <code>AudioSource</code> on its own GameObject. On a child, Unity adds one when you add the component; that one plays nothing, and you can leave it. If you assign an <code>AudioSource</code> that is not one of the NPC's voice sources, <code>AmplitudeLipSync</code> reads only that one.</p>
+<h3 id="step-2-give-it-a-jaw">Step 2: Give It a Jaw</h3>
+<p>The component uses the first <code>SkinnedMeshRenderer</code> it finds on its GameObject or its children, unless you assign one (<code>_targetRenderer</code>, under <strong>Audio &amp; Mesh Targets</strong>).
+It then looks for a jaw-open blendshape on that mesh:</p>
+<ul><li>First the name in <code>_jawBlendShapeName</code>, which is <code>jawOpen</code> by default.</li><li>If that is not found: <code>Jaw_Open</code>, <code>JawOpen</code>, <code>jaw_open</code>, <code>v_open</code>, <code>viseme_aa</code>, <code>MouthOpen</code>, <code>mouthOpen</code>, <code>mouth_open</code>, <code>Fcl_MTH_A</code>, <code>A</code>.</li></ul>
+<p>If your mesh uses another name, type it into <code>_jawBlendShapeName</code>. If your mesh has no blendshapes, assign a jaw bone (<code>_jawBone</code>, under <strong>Bone Fallback</strong>) and set its closed and open rotations. The QuickStart "Mouth" is its own jaw bone: closed 0°, open 90° around X.
+With no matching blendshape and no jaw bone, the component does nothing.</p>
+<h3 id="step-3-connect-to-npcagent">Step 3: Connect to NpcAgent</h3>
+<p>You can leave the <strong>Viseme Driver</strong> slot of your <code>NpcAgent</code> empty: on start the agent looks for an <code>AmplitudeLipSync</code> on its own GameObject and then on its children. Or drag the <code>AmplitudeLipSync</code> into the slot.
+The agent uses the driver only to close the mouth when the NPC is interrupted and when a reply ends. The mouth movement itself comes from the voice.
+The slot only uses a component that implements <code>IVisemeDriver</code>, such as <code>AmplitudeLipSync</code> or <code>ULipSyncBridge</code>. Do not put a <code>BlendShapeVisemeMapper</code> in it; the agent ignores it there.</p>
+<hr>
+<h2 id="-using-blendshapevisememapper">🧩 Using <code>BlendShapeVisemeMapper</code></h2>
+<p>The mapper does nothing by itself. It needs viseme weights from your own code or from the uLipSync bridge (next section).</p>
+<ol><li>Select your character and add the component:
+<pre><code>Add Component, then search for Blend Shape Viseme Mapper</code></pre></li><li>Assign your character's mesh in <strong>Skinned Mesh Renderer</strong>. If you leave it empty, the mapper uses the first <code>SkinnedMeshRenderer</code> on its GameObject or its children.</li><li>Choose the <strong>Viseme Standard</strong>: the 15-viseme set (<code>sil</code>, <code>PP</code>, <code>FF</code>, <code>TH</code>, <code>DD</code>, <code>kk</code>, <code>CH</code>, <code>SS</code>, <code>nn</code>, <code>RR</code>, <code>aa</code>, <code>E</code>, <code>I</code>, <code>O</code>, <code>U</code>) or ARKit-52 (<code>jawOpen</code>, <code>mouthClose</code>, <code>mouthFunnel</code>, <code>mouthPucker</code>, ...).</li><li>Click <strong>Auto-Detect BlendShapes from Mesh</strong>. The mapper looks for blendshapes named like the visemes of the chosen set. Upper and lower case do not matter, and these prefixes are also tried: <code>v_</code>, <code>viseme_</code>, <code>vis_</code>, <code>ARKit_</code>, <code>blendShape.</code>, <code>blendShape1.</code> (for example <code>viseme_aa</code>). Visemes with no matching blendshape stay unmapped; you can pick a blendshape for each one by hand in the mapping list.</li><li>Feed it from your own code: call <code>SetVisemeWeight(index, weight)</code>, <code>SetVisemeWeights(weights)</code> or <code>SetVisemeByName(name, weight)</code> on the mapper. A weight of 0 to 1 is read as a fraction; a weight above 1 is read as 0 to 100.</li></ol>
+<h3 id="one-sound-many-shape-keys">One sound, many shape keys</h3>
+<p>Each viseme in the mapping list has a <strong>Shape Keys</strong> list: the shape keys that this viseme moves together, each with its share of the full shape (0–1). When the list is empty, the viseme moves its single blendshape as above. From code: <code>SetShapeKeys(visemeName, keys)</code>.</p>
+<p>When several visemes move the same shape key, their parts are added and the sum is capped at <strong>Max Weight Ceiling</strong>. A shape key that is not on the mesh is skipped, with one warning in the Console.</p>
+<h3 id="the-arkit-preset">The ARKit preset</h3>
+<p>For a head with ARKit shape key names, click <strong>Apply ARKit Preset (A, I, U, E, O, M/B/P)</strong>. It sets the Viseme Standard to the 15-viseme set, replaces the shape keys you entered, and fills in this table (share of the full shape at a full viseme; L/R means the <code>Left</code> and the <code>Right</code> key, each at that value):</p>
+<div class="table-wrap"><table><thead><tr><th>Sound</th><th>Viseme</th><th>jawOpen</th><th>mouthClose</th><th>mouthFunnel</th><th>mouthPucker</th><th>mouthSmile L/R</th><th>mouthLowerDown L/R</th><th>mouthUpperUp L/R</th></tr></thead><tbody><tr><td>A ("father")</td><td><code>aa</code></td><td>0.70</td><td></td><td></td><td></td><td></td><td>0.30</td><td>0.10</td></tr><tr><td>I ("see")</td><td><code>I</code></td><td>0.15</td><td></td><td></td><td></td><td>0.55</td><td>0.15</td><td>0.10</td></tr><tr><td>U ("food")</td><td><code>U</code></td><td>0.10</td><td></td><td>0.30</td><td>0.80</td><td></td><td></td><td></td></tr><tr><td>E ("bed")</td><td><code>E</code></td><td>0.40</td><td></td><td></td><td></td><td>0.30</td><td>0.25</td><td>0.15</td></tr><tr><td>O ("go")</td><td><code>O</code></td><td>0.45</td><td></td><td>0.70</td><td>0.20</td><td></td><td></td><td></td></tr><tr><td>M, B, P</td><td><code>PP</code></td><td>0.10</td><td>0.10</td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div>
+<p>The other visemes, <code>sil</code> among them, move no shape key. These are starting values; tune them on your head by eye.</p>
+<p><strong>The mouthClose rule:</strong> ARKit <code>mouthClose</code> closes the lips while the jaw is open. When the mesh has both <code>jawOpen</code> and <code>mouthClose</code> and they are in the shape key lists, the mapper keeps <code>mouthClose</code> at or below <code>jawOpen</code>, so the lips do not go through each other.</p>
+<hr>
+<h2 id="-the-ulipsync-bridge-not-tested-on-a-real-character">🔌 The uLipSync Bridge (not tested on a real character)</h2>
+<p>uLipSync (<code>com.hecomi.ulipsync</code>) is a free third-party package that guesses vowels from the sound. LocalNPC does not ship it. Install it yourself through the Package Manager; when it is installed, <code>ULipSyncBridge</code> compiles. Without it, the bridge is not in the build and nothing else changes.</p>
+<p>The bridge compiles with uLipSync installed (we compiled it with uLipSync 3.1.4). The code that feeds sound to uLipSync is tested with fake audio. The bridge itself has not run on a real character yet.</p>
+<p>What the bridge needs:</p>
+<ul><li><strong>A GameObject without an <code>AudioSource</code></strong>, for example a child of the NPC. Put <code>uLipSync</code> and <code>ULipSyncBridge</code> there. The bridge reads both voice sources of the NPC's <code>SpeechAudioQueue</code> (on its GameObject or a parent, or the one you assign in <strong>Speech Queue</strong>) and feeds them to uLipSync. On a GameObject with an <code>AudioSource</code>, uLipSync also hears that <code>AudioSource</code> itself, and the bridge logs a warning.</li><li><strong>A <code>BlendShapeVisemeMapper</code></strong> on the same GameObject, or assigned in <strong>Viseme Mapper</strong>. The bridge passes each phoneme name and weight from uLipSync to the mapper's <code>SetVisemeByName</code>. Give your phonemes the mapper's viseme names (for example <code>aa</code>, not <code>A</code>); a name the mapper does not have moves nothing.</li><li><strong>A uLipSync calibration profile for the NPC's voice.</strong> uLipSync needs one to tell the vowels apart. LocalNPC ships none; make one with uLipSync's own tools.</li></ul>
+<p>The agent does not find the bridge by itself. To have the mouth close when the NPC is interrupted or a reply ends, drag <code>ULipSyncBridge</code> into the <strong>Viseme Driver</strong> slot of the <code>NpcAgent</code>.</p>
+<hr>
+<h2 id="-make-a-head-that-works">🗿 Make a Head That Works</h2>
+<p>What the components above need from a head model:</p>
+<ul><li><strong>One mesh object</strong> with a <code>SkinnedMeshRenderer</code> (not a plain <code>MeshRenderer</code>). The mapper and <code>AmplitudeLipSync</code> each move the shape keys of one <code>SkinnedMeshRenderer</code>.</li><li><strong>The 12 shape keys, with these exact names:</strong> <code>jawOpen</code>, <code>mouthClose</code>, <code>mouthFunnel</code>, <code>mouthPucker</code>, <code>mouthSmileLeft</code>, <code>mouthSmileRight</code>, <code>mouthLowerDownLeft</code>, <code>mouthLowerDownRight</code>, <code>mouthUpperUpLeft</code>, <code>mouthUpperUpRight</code>, <code>eyeBlinkLeft</code>, <code>eyeBlinkRight</code>. The ARKit preset uses the first ten; <code>AmplitudeLipSync</code> uses <code>jawOpen</code>. LocalNPC has no blink component, so nothing moves the two blink keys yet.</li><li><strong>Teeth and tongue inside that mesh</strong>, moved by the same shape keys. A separate teeth or tongue object does not move with the mouth.</li><li><strong>Under 8,000 triangles.</strong> This is our own limit for the demo head, a suggestion, not a rule.</li></ul>
+<hr>
+<h2 id="-tuning-speech-dynamics">🧪 Tuning Speech Dynamics</h2>
+<p><code>AmplitudeLipSync</code>, under <strong>Tuning Parameters</strong>:</p>
+<ul><li><code>_gain</code> (0.1–10): how far the jaw opens for a given loudness. The QuickStart "Mouth" uses 5.</li><li><code>_noiseFloor</code> (0.0001–0.1): below this loudness the mouth stays closed.</li><li><code>_attackTime</code> (0.01–0.3 s) and <code>_decayTime</code> (0.01–0.5 s): how fast the mouth opens and closes.</li><li><code>_maxWeight</code> (0–100): the largest blendshape weight applied.</li></ul>
+<p>In the <code>BlendShapeVisemeMapper</code> inspector:</p>
+<ul><li><strong>Smoothing Time (s)</strong> (0.01–0.5): how fast blendshapes move to a new weight. Lower is snappier.</li><li><strong>Max Weight Ceiling</strong> (0–100): the largest blendshape weight applied.</li><li><strong>Weight Multiplier</strong> (0.1–3.0), one per mapping: makes a single viseme stronger or weaker.</li></ul>
+<p><strong>Rest State (Zero):</strong> When a reply ends or the NPC is interrupted, the agent resets the driver in its <strong>Viseme Driver</strong> slot and the mouth goes back to its closed position at once.</p></article><p class="source-note">This page is the file <code>docs/07-lip-sync-setup.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/07-lip-sync-setup.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="06-performance-tuning.html">&larr; Performance Tuning &amp; Optimization Guide</a><a href="08-shipping-your-game.html">Shipping Your Game Guide &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

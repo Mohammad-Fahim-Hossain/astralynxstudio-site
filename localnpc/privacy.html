@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Privacy | LocalNPC</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="index.html">Home</a></li><li><a href="docs.html">Docs</a></li><li><a href="support.html">Support</a></li><li><a href="privacy.html" aria-current="page">Privacy</a></li><li><a href="third-party-notices.html">Third-party notices</a></li><li><a href="changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<h1>Privacy</h1>
+<p class="lead">What LocalNPC does with data, as described in its documentation. This page is a product description, not a legal policy.</p>
+
+<section aria-labelledby="data">
+<h2 id="data">What the package does</h2>
+<blockquote><p>LocalNPC sends no data about the player. Its only network use is downloading the model files from Hugging Face (huggingface.co) over HTTPS, with the server's certificate checked and each file checked with SHA-256 (and the licence links in the Editor). LocalNPC runs no server of its own; Hugging Face sees the IP address of the computer that downloads. Checked by reading the code; no network capture was made.</p></blockquote>
+<ul>
+<li><strong>No telemetry.</strong> No LocalNPC server.</li>
+<li><strong>No account</strong> and no API key.</li>
+<li><strong>Downloads only on a click.</strong> The model files are downloaded when you click the download button in the Setup Wizard, the Model Manager or the sample scene. After the models are downloaded, LocalNPC makes no network requests.</li>
+<li><strong>On the player's PC.</strong> Speech recognition and the language model run inside the game's own process; the NPC speaks with the Windows system voice, and nothing is downloaded for it.</li>
+</ul>
+</section>
+
+<section aria-labelledby="terms">
+<h2 id="terms">Terms</h2>
+<p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+</section>
+
+<section aria-labelledby="contact">
+<h2 id="contact">Contact</h2>
+<p>Questions: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a>.</p>
+</section>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

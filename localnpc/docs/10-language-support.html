@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Language Support &amp; Multilingual Architecture | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Language Support &amp; Multilingual Architecture</p><article class="doc"><h1 id="language-support-amp-multilingual-architecture">Language Support &amp; Multilingual Architecture</h1>
+<p>This document details language support in <code>LocalNPC</code>, explaining why v1.0 ships English-only, the technical seams designed for multilingual expansion, and the strict engineering gate required to add any new language.</p>
+<hr>
+<h2 id="1-shipping-status-english-only-in-v10">1. Shipping Status: English Only in v1.0</h2>
+<p><code>LocalNPC</code> v1.0 ships with official support for <strong>English (<code>en-US</code>)</strong>.</p>
+<p>Both presets (<code>Balanced</code>, the default, and <code>Fast</code>) are configured with:</p>
+<ul><li><code>ggml-tiny.en.bin</code> (an English-only Whisper model).</li><li>The Windows system voice for <code>en-US</code>: Microsoft Mark, then Microsoft Zira, then Microsoft David, then any other en-US OneCore voice, then a OneCore voice of another English region (en-GB, en-AU, ...), then a SAPI 5 voice of en-US. Nothing is downloaded for the voice.</li><li>English text normalizer (expanding <code>$50</code> to <code>fifty dollars</code>, dates, ordinals, and abbreviations).</li><li>An English phonemizer. The CMU dictionary itself is not included yet: 42 words are built in. The Windows voice reads text and does not use the phonemizer.</li></ul>
+<div class="callout callout-important"><p class="callout-title">Important</p><p>The pipeline is designed to be language-agnostic, but v1.0 ships and tests English (<code>en-US</code>) only, and some English assumptions are still in the code (see section 2). <strong>Non-English languages are not officially supported in v1.0</strong>. We do not make false marketing claims regarding multilingual readiness until every stage passes our quality gate.</p></div>
+<hr>
+<h2 id="2-the-architectural-seams">2. The Architectural Seams</h2>
+<p>No core pipeline file (NpcPipeline.cs, NpcAgent.cs, WindowsSpeechSynthesizer.cs, WhisperRecognizer.cs) is meant to contain hardcoded English strings, terminators, or language logic. This is not fully true yet: <code>NpcPipeline.cs</code> still falls back to the language code <code>"en"</code>, uses an English abbreviation list when no <code>LanguageProfile</code> is set, and filters a short list of English phrases out of transcripts.</p>
+<p>All language behaviour is encapsulated behind three contracts:</p>
+<pre><code class="language-mermaid">graph TD
+    LP[LanguageProfile Asset] --&gt; TN[ITextNormalizer]
+    LP --&gt; PH[IPhonemizer]
+    LP --&gt; ST[Sentence Delimiters &amp; Abbreviation Rules]
+    LP --&gt; WC[Whisper Language Code]
+    LP --&gt; SV[Windows Voices: systemVoices]</code></pre>
+<h3 id="1-languageprofile-languageprofilecs">1. <code>LanguageProfile</code> (LanguageProfile.cs)</h3>
+<p>A ScriptableObject defining:</p>
+<ul><li>Language tag (<code>en-US</code>, <code>es-ES</code>, <code>de-DE</code>, etc.).</li><li>Sentence terminators (<code>.</code> <code>!</code> <code>?</code> <code>¿</code> <code>¡</code>).</li><li>Trailing quotation/bracket closers (<code>"</code> <code>'</code> <code>)</code> <code>]</code> <code>}</code>).</li><li>Common abbreviations (<code>Mr.</code>, <code>Dr.</code>, <code>approx.</code>, <code>vs.</code>) to prevent premature sentence splitting.</li><li>Whisper language code.</li><li><code>systemVoices</code>: the Windows voices to speak with, in order of preference, by display name or voice id. When none of them is installed, any OneCore voice of the language tag is used, then any OneCore voice of its main language (for <code>en-US</code>: en-GB, en-AU, ...), then a SAPI 5 voice of the language tag. The shared voice is chosen once for the process, from the default language profile of the <code>NpcRuntimeConfig</code>; an NPC can have a voice of its own (see below).</li></ul>
+<h4 id="choosing-a-voice-for-each-npc">Choosing a Voice for Each NPC</h4>
+<p>By default every NPC speaks with the shared voice. To give an NPC its own, select its <code>NpcAgent</code> and pick a voice under <strong>Voice</strong> in the Inspector. <strong>Speaking Rate</strong> sets its speed: 1.0 is the voice's normal rate, the range is 0.6 to 1.5, and <strong>Default Speed</strong> is 0.95. From a script, set <code>SystemVoice</code> and <code>SpeakingRate</code> before the agent starts; a change after that is ignored with a warning.</p>
+<ul><li>The list shows the OneCore voices installed on the PC you work on, for the language of the agent's language profile (or of the default profile of its <code>NpcRuntimeConfig</code>). A player's PC may have other voices.</li><li>To list the voices installed on the player's PC from a script, for example for a voice menu of your own, call <code>NpcAgent.GetInstalledVoices("en-US")</code> on the main thread. Each entry has a <code>Name</code>, which you can give to <code>SystemVoice</code>, and a <code>Language</code>. It plays no sound; with no language tag it lists every voice, and it is empty when the voice library is missing.</li><li>When the chosen voice is not installed on the player's PC, the profile's <code>systemVoices</code> are tried in order, then any voice of the language tag, then any voice of its main language, then SAPI 5. The Inspector keeps a saved voice that your PC lacks and marks it "not installed here, will fall back".</li><li>On a PC with only one voice of the language, all NPCs sound the same; only their speaking rates differ. Nothing warns about this.</li><li><em>Not verified:</em> tested only against a fake list of voices. Not tried on a real PC with one or two voices, and not on Windows 10.</li></ul>
+<h3 id="2-itextnormalizer-inpcmodulescs">2. <code>ITextNormalizer</code> (INpcModules.cs)</h3>
+<p>Expands numbers, currencies, dates, and symbols into pronounceable words before the sentence goes to the voice (e.g. converting <code>100kg</code> into <code>one hundred kilograms</code>).</p>
+<h3 id="3-iphonemizer-inpcmodulescs">3. <code>IPhonemizer</code> (INpcModules.cs)</h3>
+<p>Translates graphemes (letters) into phonemes (phonetic sounds). The Windows voice reads text, so v1.0 does not use a phonemizer.</p>
+<hr>
+<h2 id="3-the-7-point-language-gate-141">3. The 7-Point Language Gate (§14.1)</h2>
+<p>Before scheduling or announcing official support for any new language, the following 7 questions must be answered affirmatively:</p>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Question</th><th>Hard Constraint</th></tr></thead><tbody><tr><td><strong>1</strong></td><td><strong>Does Windows have a voice for the language?</strong></td><td>The player installs it in <strong>Settings &gt; Time &amp; language &gt; Speech</strong>. Without one the NPC answers in text only.</td></tr><tr><td><strong>2</strong></td><td><strong>Can G2P (Grapheme-to-Phoneme) be solved permissively?</strong></td><td>Only for your own synthesizer that takes phonemes; the Windows voice does not need it. Must use an open-source dictionary or clean-room rule engine. Alternatively, developers can provide an external <code>IPhonemizer</code> plugin.</td></tr><tr><td><strong>3</strong></td><td><strong>Which Whisper model reaches acceptable Word Error Rate (WER)?</strong></td><td>Multilingual <code>tiny</code> has significantly worse WER than <code>tiny.en</code>. A larger model (<code>base</code> or <code>small</code>) is a larger download; not measured with LocalNPC.</td></tr><tr><td><strong>4</strong></td><td><strong>Which LLM produces acceptable grammar at low RAM?</strong></td><td>0.5B models struggle with complex morphology in languages like German or Japanese; a 1.5B or larger model may be mandatory.</td></tr><tr><td><strong>5</strong></td><td><strong>Does the chat template need modifications?</strong></td><td>ChatML templates must be verified for correct token framing in the target language.</td></tr><tr><td><strong>6</strong></td><td><strong>Do sentence terminators and digits differ?</strong></td><td>Non-Latin scripts (Arabic, Bengali, Devanagari, Japanese, Thai) require custom delimiter rules and numeral mappings.</td></tr><tr><td><strong>7</strong></td><td><strong>Does the subtitle font shape correctly in TextMeshPro?</strong></td><td>Complex Indic/Arabic scripts require specialized OpenType font tables and harfbuzz-compatible text shaping.</td></tr></tbody></table></div>
+<div class="callout callout-warning"><p class="callout-title">Warning</p><p><strong>Question 1 is a research blocker.</strong> If Windows has no voice for a language, the NPC cannot speak it.</p></div>
+<hr>
+<h2 id="4-how-to-implement-a-community-language">4. How to Implement a Community Language</h2>
+<p>If you wish to add a custom language to your game:</p>
+<ol><li><strong>Implement <code>ITextNormalizer</code>:</strong>
+<pre><code class="language-csharp">public class SpanishTextNormalizer : ITextNormalizer
+{
+    public string Normalize(string input)
+    {
+        // Strip markdown, expand € / números
+        return expandedText;
+    }
+}</code></pre></li><li><strong>Optional: implement <code>IPhonemizer</code></strong> (only for your own synthesizer that takes phonemes; the Windows voice does not use it):
+<pre><code class="language-csharp">public class SpanishPhonemizer : IPhonemizer
+{
+    public int[] Phonemize(string sentence)
+    {
+        // Return the phoneme ids your synthesizer expects
+        return phonemeIds;
+    }
+}</code></pre></li><li><strong>Create <code>LanguageProfile_es-ES.asset</code>:</strong>
+Set <code>whisperLanguageCode</code> to <code>"es"</code>, set <code>languageTag</code> to <code>"es-ES"</code>, put the assembly-qualified type names of your classes in <code>customNormalizerType</code> and <code>customPhonemizerType</code>, list the Spanish Windows voices to use in <code>systemVoices</code> (with an empty list, any installed es-ES voice is used), and assign the profile as the default language profile of your <code>NpcRuntimeConfig</code>.</li><li><strong>Select Multilingual Whisper &amp; LLM:</strong>
+<code>NpcRuntimeConfig</code> has no setting for the Whisper model or for another LLM. LocalNPC uses the speech-to-text model of the model catalogue, <code>ggml-tiny.en.bin</code>, which is English only, and the LLM of the chosen preset. A multilingual speech model and automatic language detection have not been tested with the built-in recognizer. To use others, write your own <code>ISpeechRecognizer</code> or <code>ILanguageModel</code> and register it before the first agent starts, with <code>NpcServiceLocator.RegisterRecognizerFactory</code> or <code>NpcServiceLocator.RegisterLanguageModelFactory</code>.</li></ol>
+<hr>
+<h2 id="5-roadmap-amp-future-languages">5. Roadmap &amp; Future Languages</h2>
+<ul><li><strong>Spanish (<code>es-ES</code>) &amp; German (<code>de-DE</code>):</strong> Planned for Post-v1.0 release.</li><li><strong>Bengali (<code>bn-BD</code>):</strong> G2P dictionary research and complex TMP font shaping remain active research tasks (~180–220 hours of engineering).</li><li><strong>Japanese (<code>ja-JP</code>):</strong> The sentence splitter must first learn to end a sentence at <code>。</code> without a following space (T-151); targeted for an optional add-on package.</li></ul></article><p class="source-note">This page is the file <code>docs/10-language-support.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/10-language-support.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="09-offline-kiosk-deployment.html">&larr; Offline &amp; Kiosk Deployment</a><a href="11-troubleshooting.html">Troubleshooting Playbook &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

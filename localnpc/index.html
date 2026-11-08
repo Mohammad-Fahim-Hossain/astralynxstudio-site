@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Voice conversations with NPCs, on the player&#x27;s PC | LocalNPC</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="index.html" aria-current="page">Home</a></li><li><a href="docs.html">Docs</a></li><li><a href="support.html">Support</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="third-party-notices.html">Third-party notices</a></li><li><a href="changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<section class="hero" aria-labelledby="title">
+<p class="eyebrow">A Unity package for 64-bit Windows</p>
+<h1 id="title">LocalNPC</h1>
+<p class="lead">Voice conversations with NPCs, on the player's PC.</p>
+<p>Players speak into their microphone and hear voiced replies from in-game characters. Everything runs on the player's PC, with no cloud service and no API fees. LocalNPC sends no data about the player: its only network use is downloading the model files from Hugging Face (huggingface.co).</p>
+<p class="cta"><a class="button" href="docs/01-quick-start.html">Quick Start</a> <a class="button button-secondary" href="docs.html">All documentation</a></p>
+</section>
+
+<div class="placeholders">
+  <div class="placeholder" role="note"><p><strong>Demo video: coming soon</strong></p><p>Placeholder. No video has been published yet.</p></div>
+  <div class="placeholder" role="note"><p><strong>Screenshots: coming soon</strong></p><p>Placeholder. No screenshots have been published yet.</p></div>
+</div>
+
+<section aria-labelledby="what">
+<h2 id="what">What it is</h2>
+<ul>
+<li>An <strong>NpcAgent</strong> component: add it to a character, give it a personality asset, press Play and speak.</li>
+<li>The language model (llama.cpp, through LlamaLib) and speech-to-text (whisper.cpp 1.9.5) run inside the game's own process, from DLLs in the package. No <code>.exe</code> is started.</li>
+<li>The NPC speaks with the Windows system voice: a OneCore voice, with SAPI 5 as the last fallback. No download and no voice model.</li>
+<li>Typed questions work the same way as voice.</li>
+<li>C# events and an async API (transcript, reply chunks, spoken sentences, state changes, <code>Interrupt()</code>).</li>
+<li>A guided Setup Wizard, a Model Manager and a Diagnostics window with per-turn timings.</li>
+<li>Sample scenes: QuickStart (a capsule), QuickStart Head (a sample head whose jaw opens with the loudness of the voice), Shopkeeper and an information Kiosk.</li>
+<li>Offline deployment: models can be bundled in StreamingAssets for kiosks and machines without internet.</li>
+</ul>
+</section>
+
+<section aria-labelledby="how">
+<h2 id="how">How it works, in 5 lines</h2>
+<ol class="steps">
+<li>The microphone signal goes through the built-in energy (loudness) voice activity detection.</li>
+<li>Speech-to-text (Whisper) turns what the player said into text.</li>
+<li>A small language model (Qwen2.5, through llama.cpp) writes the reply in the character's personality.</li>
+<li>Each sentence is spoken with the Windows system voice while the language model is still writing the next ones.</li>
+<li>The sound plays from the NPC; an optional component opens a character's jaw with the loudness of the voice.</li>
+</ol>
+</section>
+
+<section aria-labelledby="need">
+<h2 id="need">What you need</h2>
+<ul>
+<li><strong>Unity 6000.0 or newer.</strong> Tested on Unity 6000.0.85f2, 6000.3.10f1 and 6000.6.8f1. Other Unity 6 versions are not officially tested.</li>
+<li><strong>Windows 10 or 11, 64-bit only.</strong> macOS, Linux, Android, iOS and WebGL are not supported in v1.0; LocalNPC does nothing on other platforms.</li>
+<li><strong>Render pipeline:</strong> the sample scenes draw in the Built-in Render Pipeline and in URP. HDRP is not supported.</li>
+<li><strong>A Windows speech voice for the NPC's language</strong> on the machine that runs the game (<strong>Settings &gt; Time &amp; language &gt; Speech</strong>). Without one, the NPC answers in text only.</li>
+<li><strong>The Visual C++ 2015–2022 x64 Redistributable</strong> on every machine that runs the game. LocalNPC does not include Microsoft's DLLs.</li>
+<li><strong>A CPU with AVX2</strong> for normal speed. On a CPU without AVX2 a slower library is loaded instead. The models run on the CPU; the graphics card is not used in v1.0.</li>
+<li><strong>Disk space for the model files:</strong> 1.20 GB for the Balanced preset (the default) or 569 MB for the Fast preset (for low-end PCs).</li>
+</ul>
+</section>
+
+<section aria-labelledby="download">
+<h2 id="download">Models are downloaded on your click</h2>
+<p>The model files are not in the package. The Setup Wizard, the Model Manager or the sample scene's <strong>Download &amp; Install Models</strong> button downloads them from Hugging Face (huggingface.co), over HTTPS with the server's certificate checked, and checks each file with SHA-256. LocalNPC runs no server of its own; Hugging Face sees the IP address of the computer that downloads. After the models are downloaded, LocalNPC makes no network requests (checked by reading the code; no network capture was made).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Preset</th><th>Language model</th><th>Speech model</th><th>Download</th></tr></thead>
+<tbody>
+<tr><td><strong>Balanced</strong> (default)</td><td>Qwen2.5-1.5B-Instruct Q4_K_M</td><td>Whisper <code>tiny.en</code></td><td>1.20 GB</td></tr>
+<tr><td><strong>Fast</strong> (low-end PCs)</td><td>Qwen2.5-0.5B-Instruct Q4_K_M</td><td>Whisper <code>tiny.en</code></td><td>569 MB</td></tr>
+</tbody></table></div>
+</section>
+
+<section aria-labelledby="speed">
+<h2 id="speed">How long a reply takes</h2>
+<p>Typically about 3 seconds after you stop talking: a 0.9 second end-of-speech wait plus about 2 seconds (measured 2.04 to 2.25 s on one laptop, Balanced preset, five voice turns). It depends on your hardware, and we have not measured other machines yet.</p>
+</section>
+
+<section aria-labelledby="limits">
+<h2 id="limits">Honest limits of v1.0</h2>
+<ul>
+<li>LocalNPC has no content filter and gives no safety guarantee: replies come from small local models (Qwen2.5 0.5B and 1.5B) and can sometimes break character (for example when asked whether they are an AI), refuse in a generic assistant voice or say something you would not want, so test your personalities with the questions your players will ask.</li>
+<li>English speech recognition only (Whisper tiny.en); accuracy on accented speech has not been measured.</li>
+<li>The voice is the Windows system voice. It is not emotional: every reply is read in the same tone.</li>
+<li>In v1.0 only your code interrupts the NPC, by calling <code>Interrupt()</code>; the player cannot interrupt it by speaking.</li>
+<li>Push-to-talk is not connected to the microphone in v1.0; it is planned for v1.1.</li>
+<li>Use a headset: with loudspeakers, the NPC's own voice can reach the microphone.</li>
+<li>Only one <code>NpcAgent</code> can listen to the microphone at a time.</li>
+<li>The jaw opens with the loudness of the voice. Other mouth shapes need the optional uLipSync package, which is not included.</li>
+<li>RAM needs have not been measured; the Editor warns under 11 GB for the Balanced preset.</li>
+</ul>
+<p>The full list is under <a href="support.html#known-issues">Known issues</a>.</p>
+</section>
+
+<section aria-labelledby="ai">
+<h2 id="ai">AI disclosure</h2>
+<p>LocalNPC is an AI-based asset.</p>
+<blockquote><p>This package runs a language model (Qwen2.5, downloaded at first use from Hugging Face) and a speech-to-text model (Whisper) on the player's PC. NPC replies are generated by the language model and are not reviewed. Parts of the package's code and documentation were written with the help of AI tools.</p></blockquote>
+</section>
+
+<section aria-labelledby="licence">
+<h2 id="licence">Licence</h2>
+<p>LocalNPC is sold on the Unity Asset Store; the standard Unity Asset Store EULA applies. Third-party components and their licences are listed in the <a href="third-party-notices.html">Third-Party Notices</a>, which ship with the package.</p>
+</section>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Installation &amp; System Requirements | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Installation &amp; System Requirements</p><article class="doc"><h1 id="installation-amp-system-requirements">Installation &amp; System Requirements</h1>
+<p>Hardware and software requirements, platform support, and project configuration guidelines for <strong>LocalNPC</strong>.</p>
+<hr>
+<h2 id="-system-requirements">💻 System Requirements</h2>
+<h3 id="development-environment">Development Environment</h3>
+<ul><li><strong>Unity Version:</strong> Unity 6000.0 or newer. Tested on Unity 6000.0.85f2, 6000.3.10f1 and 6000.6.8f1. Other Unity 6 versions are not officially tested. On 6000.0 the package was tested in the Editor (EditMode and PlayMode), and the Windows player of the head demo scene was built and run by hand.</li><li><strong>Unity Inference Engine:</strong> optional. v1.0 does not use it. LocalNPC compiles without the package. If you install it, use version <code>2.6.1</code> (pinned in <code>Packages/manifest.json</code>).</li><li><strong>Operating System:</strong> Windows 10/11 64-bit (x86_64).</li><li><strong>Scripting Backend:</strong> Mono or IL2CPP (both fully supported).</li><li><strong>API Compatibility Level:</strong> .NET Standard 2.1 or .NET Framework.</li><li><strong>Render Pipeline:</strong> The three sample scenes draw in the Built-in Render Pipeline and in URP. They use their own simple shader (<code>SampleShaded.shader</code>: a fixed light direction, no shadows), so a project from the <strong>3D</strong> or the <strong>Universal 3D</strong> template shows them without changes. HDRP is not supported: the samples were not tested there and may not draw correctly. The LocalNPC scripts use no render pipeline. Conversations were run-tested in URP; in the Built-in pipeline the sample scenes were checked to start and draw.</li></ul>
+<h3 id="machines-that-run-the-game">Machines That Run the Game</h3>
+<ul><li><strong>Windows 10 or 11 with a Windows voice for the NPC's language:</strong> the NPC speaks with a Windows system voice, a OneCore voice with SAPI 5 as the last fallback. Nothing is downloaded for it. For en-US, LocalNPC tries Microsoft Mark, then Microsoft Zira, then Microsoft David, then any other en-US voice, then a voice of another English region such as en-GB or en-AU. To add a voice, open <strong>Settings &gt; Time &amp; language &gt; Speech</strong> and add one under <strong>Manage voices &gt; Add voices</strong>. The <strong>Manage voices</strong> path was checked on Windows 11, not on Windows 10. The voice chosen as the default in Windows Settings does not change the NPC's voice: LocalNPC takes the first installed voice of the language profile's list (measured on one PC: with Microsoft David as the Windows default, LocalNPC used Microsoft Mark). The Windows 11 "Natural" voices of Narrator are not available to LocalNPC (checked on one PC during development), so adding one does not give the NPC a voice. Without a voice, the NPC answers in text only and logs one warning. The Setup Wizard's environment step shows the row <strong>Windows voice installed</strong>.</li><li><strong>Visual C++ 2015–2022 x64 Redistributable:</strong> must be installed on every machine that runs the game. LocalNPC does not include Microsoft's DLLs. Without it the native libraries do not load; see <a href="11-troubleshooting.html">Troubleshooting</a>.</li><li><strong>CPU with AVX2:</strong> the minimum for normal speed. On a CPU without AVX2 a slower library is loaded instead (5.4 and 6.4 tokens per second in two test runs with the 0.5B model of the Fast preset; with the 1.5B model of the default Balanced preset, not measured yet). Speech-to-text also loads a slower library on such a CPU (<code>ggml-cpu-x64.dll</code>); its speed is not measured. See <a href="11-troubleshooting.html">Troubleshooting</a>.</li></ul>
+<h3 id="target-hardware-budgets">Target Hardware Budgets</h3>
+<div class="table-wrap"><table><thead><tr><th>Preset</th><th>Target Model</th><th>Min RAM</th><th>Graphics card</th><th>Disk Space</th></tr></thead><tbody><tr><td><strong>Fast</strong> (low-end PCs)</td><td>Qwen2.5-0.5B-Instruct Q4_K_M</td><td>not measured yet</td><td>not used (CPU only in v1.0)</td><td>569 MB of model files</td></tr><tr><td><strong>Balanced</strong> (Default)</td><td>Qwen2.5-1.5B-Instruct Q4_K_M</td><td>not measured yet</td><td>not used (CPU only in v1.0)</td><td>1.20 GB of model files</td></tr></tbody></table></div>
+<p>Disk space is the sum of the model file sizes in the model catalogue, in decimal units as the Setup Wizard shows them. Balanced: 1.12 GB (LLM) and 78 MB (Whisper tiny.en), 1.20 GB in all. Fast: 491 MB (LLM) and the same Whisper file, 569 MB in all.</p>
+<p>Memory of the speech model: about 135 MB of working set and about 650 MB of private bytes while it is loaded (measured on one laptop (Intel Core i7-8750H, 15.8 GB RAM, Windows 11), <code>tiny.en</code> model, 4 threads, on battery, one or two runs per figure). Minimum RAM for a whole preset is still not measured.</p>
+<p>The <strong>Balanced</strong> preset is the default; <strong>Fast</strong> is the option for low-end PCs. Balanced's 1.5B model has run in a Windows player build (Mono and IL2CPP, without a window, on one PC (Intel Core i7-8750H, 16 GB RAM, Windows 11), Unity 6000.3.10f1, one run each); the process working set with the model loaded was 1960 MB (Mono) and 1969 MB (IL2CPP). Not measured yet for Balanced: a minimum RAM, a windowed player, a CPU without AVX2, and a download through the Setup Wizard window. The <strong>Quality</strong> preset is not available in v1.0.</p>
+<hr>
+<h2 id="-project-settings-configuration">⚙️ Project Settings Configuration</h2>
+<h3 id="1-standalone-target-architecture">1. Standalone Target Architecture</h3>
+<p>LocalNPC ships with eight native 64-bit Windows libraries in <code>Plugins/x86_64</code>. All eight together are 31.1 MB: the two LlamaLib libraries are 26.9 MB, the five whisper.cpp libraries are 4.0 MB and the voice library is 0.2 MB (file sizes on disk).</p>
+<ul><li><strong>Language model:</strong> <code>llamalib_win-x64_avx2.dll</code> and <code>llamalib_win-x64_noavx.dll</code>. The one that fits the CPU is loaded at run time.</li><li><strong>Speech-to-text (whisper.cpp 1.9.5):</strong> <code>ggml-base.dll</code>, <code>ggml.dll</code>, <code>whisper.dll</code>, and the two CPU libraries <code>ggml-cpu-haswell.dll</code> and <code>ggml-cpu-x64.dll</code>. One of the two CPU libraries is loaded at run time.</li><li><strong>Voice:</strong> <code>localnpc_winspeech.dll</code>, which speaks through the Windows system voices.</li></ul>
+<p>All of them are loaded into the game's own process. The package contains no <code>.exe</code>.</p>
+<p><strong>Restart Unity after replacing these DLLs.</strong> Once loaded, the speech-to-text libraries and the voice library stay loaded until the Unity process ends, also after you leave Play Mode. After a package update, or after you replace a file in <code>Plugins/x86_64</code> by hand, close Unity and open it again.</p>
+<ul><li><strong>Build Target:</strong> Windows Standalone (<code>StandaloneWindows64</code>).</li><li>32-bit builds (<code>StandaloneWindows</code>) are not supported: <code>BuildPreprocessor</code> logs one warning, and LocalNPC does nothing in such a build.</li><li>macOS, Linux, Android, iOS and WebGL are not supported in v1.0. Only Windows was built and tested. LocalNPC does nothing on other platforms: a build for another platform gets one warning from <code>BuildPreprocessor</code>, and in a macOS or Linux Editor LocalNPC shows "LocalNPC v1.0 works on Windows only (Windows 10/11, 64-bit). This platform is not supported yet." and loads nothing. WebGL builds do not compile: the microphone code uses Unity's <code>Microphone</code> class, which WebGL does not have (found by reading the code; no WebGL build was tried). Not tested in a macOS or Linux Editor, and no build for another platform was made.</li></ul>
+<h3 id="2-managed-code-stripping-il2cpp">2. Managed Code Stripping (IL2CPP)</h3>
+<p>When building standalone IL2CPP executables:</p>
+<ul><li>Set <strong>Managed Stripping Level</strong> to <strong>Minimal</strong> or <strong>Low</strong>.</li><li>LocalNPC automatically includes a <code>link.xml</code> file preserving reflection-based JSON and contract factories.</li></ul>
+<hr>
+<h2 id="-package-installation">📦 Package Installation</h2>
+<p>To install LocalNPC into an existing Unity 6 project:</p>
+<ol><li>Open <strong>Window → Package Manager</strong>.</li><li>Under <strong>My Assets</strong>, find LocalNPC and click <strong>Download</strong>, then <strong>Import</strong>. (If you have an unpacked copy of the package folder instead, click <strong>+ → Add package from disk...</strong> and select its <code>package.json</code>.)</li><li>Leave every file selected in the import window and click <strong>Import</strong>.</li><li>Once imported, open <strong>Tools &gt; LocalNPC &gt; Setup Wizard</strong> (or <strong>Tools &gt; LocalNPC &gt; Model Manager</strong>) to download the model files from Hugging Face (huggingface.co); each file is checked with SHA-256. The speech-to-text model comes from the model catalogue and is listed in the Model Manager.</li></ol></article><p class="source-note">This page is the file <code>docs/02-installation-requirements.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/02-installation-requirements.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="01-quick-start.html">&larr; Quick Start Guide</a><a href="03-personality-writing-guide.html">Personality Writing Guide &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

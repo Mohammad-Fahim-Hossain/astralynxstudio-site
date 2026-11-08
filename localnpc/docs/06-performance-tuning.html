@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Performance Tuning &amp; Optimization Guide | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Performance Tuning &amp; Optimization Guide</p><article class="doc"><h1 id="performance-tuning-amp-optimization-guide">Performance Tuning &amp; Optimization Guide</h1>
+<p>How to optimize LocalNPC latency, memory consumption, and frame stability.</p>
+<hr>
+<h2 id="-end-to-end-latency-budgets--1800-ms-design-budget-not-met-on-the-one-laptop-measured">⏱ End-to-End Latency Budgets: ≤ 1800 ms, design budget (not met on the one laptop measured)</h2>
+<p>The conversational pipeline consists of 6 sequential and overlapping stages:</p>
+<div class="table-wrap"><table><thead><tr><th>Stage</th><th>Component</th><th>Typical Time (Fast)</th><th>Acceptance Budget</th></tr></thead><tbody><tr><td><strong>Silence Detection</strong></td><td><code>VoiceActivityGate</code> (Hysteresis)</td><td>about 0.9 s by design: the turn ends after 900 ms below the end threshold. Replayed offline (not in the app): 0.94 to 1.10 s after the last word</td><td>none: a fixed wait of about 0.9 s, before the model time below</td></tr><tr><td><strong>Speech-to-Text</strong></td><td>Whisper tiny.en, in-process</td><td>measured: 0.62 to 0.90 s for a 3 s clip, 0.61 to 1.07 s for an 11 s clip (see the note below)</td><td>≤ 350 ms</td></tr><tr><td><strong>LLM Prefix Lookup</strong></td><td>KV Cache Hit</td><td>not measured</td><td>≤ 50 ms</td></tr><tr><td><strong>LLM 1st Sentence</strong></td><td>Qwen2.5-0.5B (8–14 tokens)</td><td>not measured</td><td>≤ 450 ms</td></tr><tr><td><strong>Text-to-Speech</strong></td><td>Windows system voice (1st Sentence)</td><td>not measured</td><td>≤ 400 ms</td></tr><tr><td><strong>Audio Pre-roll</strong></td><td><code>SpeechAudioQueue</code> Scheduling</td><td>not measured</td><td>≤ 150 ms</td></tr><tr><td><strong>Total Turn Latency</strong></td><td><strong>End-of-Speech → First Audio</strong></td><td><strong>not measured for Fast.</strong> Balanced: about 2 s after the 0.9 s wait (2.04 to 2.25 s on one laptop, five voice turns; see below)</td><td><strong>≤ 1800 ms</strong>, design budget (not met on the one laptop measured)</td></tr></tbody></table></div>
+<p><strong>What is measured in this table:</strong> the speech-to-text row, and the silence-detection row offline: recordings of one voice with fan noise, replayed through a copy of the microphone chain, not measured in the app. Speech-to-text starts only after the silence wait, so its time and the model times come on top of it. Speech-to-text was measured on one laptop (Intel Core i7-8750H, 15.8 GB RAM, Windows 11), <code>tiny.en</code> model, 4 threads, on battery, one or two runs per figure. On that laptop the speech-to-text step alone is over its budget, and a 3 s clip costs about as much as an 11 s clip. The total row was measured with the Balanced preset, on the sample scenes' HUD clock (see "Two clocks" below); the other rows of the "Typical Time" column are not measured. Reply time: Typically about 3 seconds after you stop talking: a 0.9 second end-of-speech wait plus about 2 seconds (measured 2.04 to 2.25 s on one laptop, Balanced preset, five voice turns). It depends on your hardware, and we have not measured other machines yet.</p>
+<hr>
+<h2 id="-thread-configuration-threadcount">🧵 Thread Configuration (<code>threadCount</code>)</h2>
+<p>In <code>NpcRuntimeConfig</code>:</p>
+<ul><li><strong><code>threadCount = 0</code> (Auto):</strong> Uses <code>max(2, min(physical cores - 2, 6))</code> threads. The two cores left out are headroom for Unity's main thread and render thread.</li><li><strong>Dedicated CPU Allocation:</strong>
+<ul><li><code>LocalNPC-Inference</code>: Runs Whisper STT and Llama LLM sequentially. The Windows voice speaks each sentence on a thread-pool thread. Speech-to-text runs in-process on this thread, so a transcription waits behind a reply that another NPC is generating.</li><li>There is no separate audio thread in v1.0: microphone audio is processed on Unity's main thread, once per frame.</li></ul></li><li><strong>Rule of Thumb:</strong> leave <code>threadCount</code> at <code>0</code> (Auto). Other values were not measured.</li></ul>
+<hr>
+<h2 id="-context-window-amp-history-trimming">🪟 Context Window &amp; History Trimming</h2>
+<p>In <code>NpcRuntimeConfig</code>:</p>
+<ul><li><strong><code>contextLength = 2048</code>:</strong> The default. How many conversational turns fit has not been measured yet.</li><li><strong>Memory Impact:</strong> Memory per context token is not measured yet. On file: about 473 MB for one NPC and about 46 MB for each extra NPC with the 0.5B model (measured in the Editor on one PC, one run each). The loaded speech model adds about 135 MB of working set and about 650 MB of private bytes (measured on one laptop (Intel Core i7-8750H, 15.8 GB RAM, Windows 11), <code>tiny.en</code> model, 4 threads, on battery, one or two runs per figure). Setting context to 8192 unnecessarily consumes RAM and increases prompt evaluation times.</li><li><strong>Pairwise Trimming Rule:</strong> LocalNPC's <code>ConversationSession</code> automatically preserves the system prompt + few-shot exemplars, and drops the oldest user/assistant <em>pairs</em> first, guaranteeing that conversational chat templates never become corrupt.</li></ul>
+<hr>
+<h2 id="-profiling-with-diagnostics-window">🔍 Profiling with Diagnostics Window</h2>
+<p>Open <strong>Tools &gt; LocalNPC &gt; Diagnostics Window</strong> during Play Mode:</p>
+<ol><li><strong>Live Latency Breakdown:</strong> A bar chart of the STT, LLM TTFT and TTS timings of each turn. Its clock starts when the pipeline gets the turn, so the end-of-speech wait of about 0.9 s is not in it. The window compares each turn with a target of 2500 ms to the first audio, after the end-of-speech wait; a turn above it is shown in amber as information, not as an error. On the one laptop measured (Balanced), turns took about 2 s on the HUD clock, so they show within this target. Slower PCs may show above it; that is information, not an error.</li><li><strong>Generation Throughput:</strong> Measures tokens-per-second (tok/s). For comparison, the Fast preset (0.5B) gave 50.4 to 55.8 tok/s in a player build without a window, and 28.4 and 36.8 tok/s in a windowed player; the default Balanced preset (1.5B) gave 21.0 and 23.7 tok/s in a player build without a window, for a 12-token reply (windowed: not measured yet) (one PC (Intel Core i7-8750H, 16 GB RAM, Windows 11), Unity 6000.3.10f1, one run per figure).</li><li><strong>RAM (MB):</strong> Graph of the peak resident RAM of each turn. The RAM card compares it with the target of the preset the agent runs: Fast has a target of 800 MB; Balanced has no RAM target.</li><li><strong>Two clocks for "time to first audio".</strong> The sample scenes' HUD shows <strong>Time to first audio</strong> with its own clock: for a voice turn it starts when the NPC stops listening, after the same 0.9 s wait, and stops when the first sentence starts to play. The Diagnostics window uses the pipeline's clock. The two are measured at different points, so their numbers can differ; neither includes the 0.9 s wait.</li></ol></article><p class="source-note">This page is the file <code>docs/06-performance-tuning.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/06-performance-tuning.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="05-api-reference.html">&larr; Public API Reference</a><a href="07-lip-sync-setup.html">Lip Sync Setup Guide &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

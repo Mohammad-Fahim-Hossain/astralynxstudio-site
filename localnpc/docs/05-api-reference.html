@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Public API Reference | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Public API Reference</p><article class="doc"><h1 id="public-api-reference">Public API Reference</h1>
+<p>The complete public API surface under the <code>LocalNPC</code> namespace. Conforms strictly to the Frozen API Specification (§7.1).</p>
+<hr>
+<h2 id="-top-level-facade-localnpclocalnpc">🏛 Top-Level Facade: <code>LocalNPC.LocalNpc</code></h2>
+<p>The static entry point for project-wide package initialization and model provisioning.</p>
+<pre><code class="language-csharp">namespace LocalNPC
+{
+    public static class LocalNpc
+    {
+        /// &lt;summary&gt;Global LocalNPC runtime settings and project defaults.&lt;/summary&gt;
+        public static LocalNpcSettings Settings { get; }
+
+        /// &lt;summary&gt;True if models required by the default configuration are verified on disk.&lt;/summary&gt;
+        public static bool AreModelsReady { get; }
+
+        /// &lt;summary&gt;Ensures models are installed and verified asynchronously.&lt;/summary&gt;
+        public static Task EnsureModelsAsync(IProgress&lt;ProvisionStatus&gt; p = null, CancellationToken ct = default);
+
+        /// &lt;summary&gt;Immediately releases and unloads all shared models and background worker threads.&lt;/summary&gt;
+        public static void UnloadAll();
+    }
+}</code></pre>
+<h3 id="usage-example">Usage Example:</h3>
+<pre><code class="language-csharp">using UnityEngine;
+using LocalNPC;
+
+public class GameInitializer : MonoBehaviour
+{
+    private async void Start()
+    {
+        if (!LocalNpc.AreModelsReady)
+        {
+            Debug.Log("Downloading on-device models...");
+            await LocalNpc.EnsureModelsAsync();
+        }
+        Debug.Log("LocalNPC models ready!");
+    }
+}</code></pre>
+<hr>
+<h2 id="-main-component-localnpcnpcagent">🤖 Main Component: <code>LocalNPC.NpcAgent</code></h2>
+<p>The primary MonoBehaviour through which games orchestrate character interactions.</p>
+<h3 id="public-properties">Public Properties</h3>
+<div class="table-wrap"><table><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>Personality</code></td><td><code>NpcPersonality</code></td><td>Active character personality asset (prompts, stop strings).</td></tr><tr><td><code>State</code></td><td><code>NpcState</code></td><td>Current operational state (<code>Unloaded</code>, <code>Loading</code>, <code>Idle</code>, <code>Listening</code>, <code>Transcribing</code>, <code>Thinking</code>, <code>Speaking</code>, <code>Error</code>).</td></tr><tr><td><code>IsReady</code></td><td><code>bool</code></td><td>True once a prewarm has completed and the agent is not loading or in <code>Error</code>. False after a cancelled prewarm: call <code>PrewarmAsync</code> again.</td></tr><tr><td><code>SystemVoice</code></td><td><code>string</code></td><td>Windows voice of this NPC, by display name or voice id; empty for the shared voice. Read when the agent starts.</td></tr><tr><td><code>SpeakingRate</code></td><td><code>float</code></td><td>Speaking rate of this NPC: 1.0 is the voice's normal rate, clamped to 0.6..1.5; 0 for the default (0.95). Read when the agent starts.</td></tr></tbody></table></div>
+<h3 id="public-methods">Public Methods</h3>
+<pre><code class="language-csharp">// Prewarms and loads required inference models into memory
+public Task PrewarmAsync(CancellationToken ct = default);
+
+// Begins listening for player speech via the microphone. Only one NpcAgent can listen at a time;
+// call StopListening on one before StartListening on another.
+public void StartListening();
+
+// Stops listening for player speech and returns the agent to Idle
+public void StopListening();
+
+// Executes a conversational turn directly from typed text input
+public Task SayAsync(string userText, CancellationToken ct = default);
+
+// Stops the current reply at once. Call it from your code; speaking does not interrupt the NPC.
+public void Interrupt();
+
+// Clears conversational chat history
+public void ResetConversation();
+
+// Updates personality asset at runtime with optional history reset
+public void SetPersonality(NpcPersonality p, bool resetHistory = true);
+
+// Lists the Windows voices installed on this PC for a language (every voice for an empty tag); plays no sound
+public static NpcVoiceInfo[] GetInstalledVoices(string languageTag);</code></pre>
+<h3 id="public-events">Public Events</h3>
+<pre><code class="language-csharp">// Fired when the agent transitions between operational states
+public event Action&lt;NpcState, NpcState&gt; OnStateChanged;
+
+// Fired when the player's microphone speech is transcribed into text
+public event Action&lt;string&gt; OnUserTranscript;
+
+// Fired as incremental token chunks stream from the LLM
+public event Action&lt;string&gt; OnReplyChunk;
+
+// Fired as each individual sentence begins audible speech playback.
+// With no Windows voice installed, it fires for each sentence, which is then shown as text only.
+public event Action&lt;string&gt; OnSentenceSpoken;
+
+// Fired when the full reply generation and audio playback completes
+public event Action&lt;string&gt; OnReplyComplete;
+
+// Fired on pipeline or stage errors (guaranteeing zero unhandled exceptions)
+public event Action&lt;NpcError&gt; OnError;</code></pre>
+<hr>
+<h2 id="-installed-voice-localnpcnpcvoiceinfo">🔊 Installed Voice: <code>LocalNPC.NpcVoiceInfo</code></h2>
+<p>One installed Windows voice, as <code>NpcAgent.GetInstalledVoices</code> lists it.</p>
+<pre><code class="language-csharp">public readonly struct NpcVoiceInfo
+{
+    // Display name, for example "Microsoft Zira"; a value for NpcAgent.SystemVoice
+    public readonly string Name;
+
+    // BCP-47 language tag, for example "en-US"
+    public readonly string Language;
+}</code></pre>
+<hr>
+<h2 id="-error-codes-localnpcnpcerrorcode">⚠️ Error Codes: <code>LocalNPC.NpcErrorCode</code></h2>
+<pre><code class="language-csharp">public enum NpcErrorCode
+{
+    None = 0,
+    ModelMissing,
+    ModelCorrupt,
+    NativeLibraryMissing,
+    AbiMismatch,
+    MicrophoneUnavailable,
+    MicrophonePermissionDenied,
+    OutOfMemory,
+    InferenceFailed,
+    SynthesisFailed,
+    LanguageUnsupported,
+    Cancelled,
+    Unknown
+}</code></pre>
+<hr>
+<h2 id="-push-to-talk-localnpcaudiopushtotalkcontroller">🎙 Push-To-Talk: <code>LocalNPC.Audio.PushToTalkController</code></h2>
+<p>Gated microphone control for kiosks, noisy rooms, or walkie-talkie style mechanics.</p>
+<blockquote><p><strong>v1.0:</strong> <code>PushToTalkController</code> is not connected to the microphone. It records only the audio your own code passes to <code>PushAudioFrame</code>, so holding the key or button alone sends nothing to the NPC. Connecting it to the microphone is planned for v1.1. Until then, use <code>NpcAgent.StartListening()</code> (the built-in microphone).</p></blockquote>
+<pre><code class="language-csharp">// Programmatically activates recording (ideal for UI buttons or VR triggers)
+public void SetPressed(bool isPressed);
+
+// Key/button configuration
+public PushToTalkMode Mode { get; set; } // PressAndHold or Toggle
+public KeyCode LegacyKey { get; set; }   // KeyCode.Space</code></pre></article><p class="source-note">This page is the file <code>docs/05-api-reference.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/05-api-reference.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="04-choosing-model-preset.html">&larr; Choosing a Model Preset</a><a href="06-performance-tuning.html">Performance Tuning &amp; Optimization Guide &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

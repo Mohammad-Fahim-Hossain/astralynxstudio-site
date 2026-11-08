@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Support | LocalNPC</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="index.html">Home</a></li><li><a href="docs.html">Docs</a></li><li><a href="support.html" aria-current="page">Support</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="third-party-notices.html">Third-party notices</a></li><li><a href="changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<h1>Support</h1>
+<p class="lead">Email <a href="mailto:localnpcsupport@gmail.com"><strong>localnpcsupport@gmail.com</strong></a>.</p>
+<section aria-labelledby="getting-help">
+<h2 id="getting-help">What to send</h2>
+<p>Email <strong>localnpcsupport@gmail.com</strong>. Please include:</p>
+<ul><li>your Unity version (for example 6000.3.10f1),</li><li>your Windows version (for example Windows 11 23H2),</li><li>the Console log (in the Console window's menu, <strong>Open Editor Log</strong>; for a build, its player log),</li><li>the Diagnostics window export (the CSV file from step 1),</li><li>whether the problem also happens in the <strong>01_QuickStart</strong> sample scene.</li></ul>
+<p>We are a small team, so a reply can take a few days.</p>
+</section>
+<section aria-labelledby="before-you-write">
+<h2 id="before-you-write">Before you write</h2>
+<p>If you encounter an issue not covered in this playbook:</p>
+<ol><li>Export a diagnostics report: after a Play session with the NPC, open <strong>Tools &gt; LocalNPC &gt; Diagnostics Window</strong> and click the <strong>Export CSV</strong> button.</li><li>Check the generated <code>LocalNPC_BuildManifest.json</code> for checksum mismatches.</li><li>Email us, as described below.</li></ol>
+<p>Most problems have an entry in the <a href="docs/11-troubleshooting.html">Troubleshooting Playbook</a>.</p>
+</section>
+<section aria-labelledby="player-log">
+<h2 id="player-log">Sending a log from a built game (Player.log)</h2>
+<p>In the Editor: in the Console window's menu, <strong>Open Editor Log</strong>.</p>
+<p>For a built game, the log is at <code>%USERPROFILE%\AppData\LocalLow\&lt;company name&gt;\&lt;product name&gt;\Player.log</code> (the company and product names are in your <strong>Project Settings &gt; Player</strong>). The previous run is kept as <code>Player-prev.log</code>, and Unity overwrites <code>Player.log</code> each time the game starts, so copy it before you run the game again.</p>
+</section>
+<section aria-labelledby="known-issues">
+<h2 id="known-issues">Known issues in v1.0</h2>
+<p>Known limits of this version, and what to do about each one.</p>
+<ul><li><strong>Very short phrases.</strong> A very short phrase can still be dropped when Whisper reports no speech for the turn; the phrases "you" and "the end" are always ignored. If a short reply gets no answer, say a little more, or send it as typed text.</li><li><strong><code>VoiceActivityGate</code> event order.</strong> If you use this class in your own code: it can raise <code>OnUtteranceCancelled</code> just before <code>OnUtteranceCompleted</code>; treat Completed as the result.</li><li><strong>Loud steady noise (fan, air conditioner).</strong> The microphone follows the level of steady noise (tested offline with recordings of one fan, not in the app), but speech must be about 8 dB louder than the noise to be heard, and a voice turn ends after 12 s at most. If the NPC answers late or not at all near loud noise, and the <strong>Speech Level</strong> meter (Inspector of <code>MicrophoneCapture</code>, in Play mode) shows more than about 20 % while nobody speaks, lower the microphone input volume in Windows (<strong>Settings &gt; System &gt; Sound &gt; Input</strong>) or move the microphone away from the noise.</li><li><strong>Reply time.</strong> Typically about 3 seconds after you stop talking: a 0.9 second end-of-speech wait plus about 2 seconds (measured 2.04 to 2.25 s on one laptop, Balanced preset, five voice turns). It depends on your hardware, and we have not measured other machines yet. On a 2018 laptop the speech-to-text step alone took 0.6 to 0.9 s for a 3 s clip.</li><li><strong>Older CPUs.</strong> Tested on CPUs with AVX2; on older CPUs a slower library is used, which was not tested on such a CPU.</li><li><strong>Kiosk models.</strong> In StreamingAssets mode, the language model in the download folder is used first if one is there. For a kiosk, keep only the bundled copy.</li><li><strong>Microphone unplugged or switched.</strong> This is tested with automated tests only. If voice input stops, call <code>StopListening</code> and then <code>StartListening</code>.</li><li><strong>One listening NPC.</strong> Only one <code>NpcAgent</code> can listen to the microphone at a time. Call <code>StopListening</code> on one before <code>StartListening</code> on another.</li><li><strong>Kiosk sample.</strong> The Kiosk sample was tested with loudspeakers; a headset was not tried.</li><li><strong>Speech recognition out of memory.</strong> If it runs out of memory, voice input stops until you call <code>PrewarmAsync</code> again. Typed input keeps working.</li><li><strong>Voice field of <code>NpcPersonality</code>.</strong> <code>NpcPersonality.voice</code> is not used in v1.0; set the voice with <code>NpcAgent.SystemVoice</code>.</li><li><strong><code>StopAfterSentence</code>.</strong> After <code>StopAfterSentence</code>, a sentence that was already being prepared can still be heard.</li><li><strong>ARKit preset.</strong> The ARKit preset has not been tested on a real head yet.</li><li><strong>uLipSync.</strong> uLipSync is optional and not included. Put <code>uLipSync</code> and <code>ULipSyncBridge</code> on a GameObject without an <code>AudioSource</code>, for example a child of the NPC. Then drag <code>ULipSyncBridge</code> into the NPC's <strong>Viseme Driver</strong> slot. LocalNPC ships no uLipSync calibration profile; make one with uLipSync's own tools. See <a href="docs/07-lip-sync-setup.html">Lip Sync Setup</a>.</li><li><strong>Narrator voices.</strong> The Windows 11 "Natural" voices of Narrator are not available to LocalNPC (checked on one PC). Add a normal voice in <strong>Settings &gt; Time &amp; language &gt; Speech</strong>.</li><li><strong>Other platforms.</strong> On macOS, Linux and other platforms LocalNPC does nothing. But if your own code calls <code>MicrophoneCapture.StartCapture</code> or <code>LocalNpc.EnsureModelsAsync</code> there, the microphone still opens or the download still starts. Do not call them on these platforms.</li><li><strong>WebGL.</strong> WebGL builds do not compile: the microphone code uses Unity's <code>Microphone</code> class, which WebGL does not have (found by reading the code; no WebGL build was tried).</li><li><strong>Smart App Control and Burst.</strong> When the optional Inference Engine package (<code>com.unity.ai.inference</code>) is installed, Windows Smart App Control can block the file that Unity's Burst compiler builds in the Editor (error 4551 in the Console; seen on one development PC). LocalNPC v1.0 does not use the Inference Engine. Workaround, in the Editor only: turn off <strong>Jobs &gt; Burst &gt; Enable Compilation</strong>. Do not turn Smart App Control off.</li></ul>
+<p class="source-note">From <a href="docs/11-troubleshooting.html">Troubleshooting</a>, section 6.</p>
+</section>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>

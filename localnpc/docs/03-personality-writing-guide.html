@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LocalNPC: spoken conversations with NPCs in Unity, on the player&#x27;s Windows PC.">
+<meta name="color-scheme" content="light dark">
+<title>Personality Writing Guide | LocalNPC</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../index.html">LocalNPC <span class="brand-sub">by Astralynx Studio</span></a>
+    <nav aria-label="Main"><ul class="nav"><li><a href="../index.html">Home</a></li><li><a href="../docs.html" aria-current="page">Docs</a></li><li><a href="../support.html">Support</a></li><li><a href="../privacy.html">Privacy</a></li><li><a href="../third-party-notices.html">Third-party notices</a></li><li><a href="../changelog.html">Changelog</a></li></ul></nav>
+  </div>
+</header>
+<main id="main" class="wrap" tabindex="-1">
+<p class="crumbs"><a href="../docs.html">Docs</a> / Personality Writing Guide</p><article class="doc"><h1 id="personality-writing-guide">Personality Writing Guide</h1>
+<div class="callout callout-important"><p class="callout-title">Important</p><p><strong>Most runtime conversational issues (rambling, contradictions, breaking character, slow response times) are prompt defects, not software bugs.</strong>
+Small on-device models (0.5B to 1.5B parameters) behave very differently from cloud-scale 70B+ LLMs. This guide explains how to write NPC personalities that work with small models.</p></div>
+<hr>
+<h2 id="-small-model-psychology-05b--15b">🧠 Small Model Psychology (0.5B – 1.5B)</h2>
+<p>Cloud models (GPT-4, Claude, Gemini) have vast world knowledge and strong reasoning. Small on-device models (e.g. Qwen 2.5 0.5B) have:</p>
+<ol><li><strong>They follow the system prompt best.</strong> Do not count on them to remember the conversation: in one test with the 1.5B model, the NPC could not say what the player had just asked (2 of 2 tries).</li><li><strong>Literal Rule Adherence:</strong> If you tell a 0.5B model <em>"Be creative and talk about your past"</em>, it will hallucinate wildly. If you tell it <em>"You are Barnaby. You sell health potions for 10 gold. Never discuss magic outside healing"</em>, it will adhere reliably.</li><li><strong>Tendency to Ramble if Uncapped:</strong> Without explicit sentence caps, smaller models will generate continuous monologue until token limits expire.</li></ol>
+<hr>
+<h2 id="-the-5-cardinal-rules-of-on-device-character-prompts">📏 The 5 Cardinal Rules of On-Device Character Prompts</h2>
+<h3 id="1-stay-under-200-tokens">1. Stay Under 200 Tokens</h3>
+<p>Small models degrade in inference speed and coherence as the prompt grows.</p>
+<ul><li><strong>Good:</strong> 80–150 tokens.</li><li><strong>Warning:</strong> &gt; 200 tokens (the <code>NpcPersonalityInspector</code> will highlight this in yellow/orange).</li><li><strong>Broken:</strong> &gt; 350 tokens (doubles time-to-first-token and pollutes the KV cache).</li></ul>
+<h3 id="2-write-in-second-person-imperative-you-are">2. Write in Second Person Imperative (<code>You are...</code>)</h3>
+<p>Always address the model directly:</p>
+<pre><code>You are Captain Teresa, a stern harbor guard in the port city of Oakhaven.
+You inspect incoming cargo and speak with concise authority.</code></pre>
+<p><em>Avoid third-person or narrative prose like: "This is a character named Teresa who works as a guard..."</em></p>
+<h3 id="3-enforce-strict-output-length">3. Enforce Strict Output Length</h3>
+<p>Always specify a sentence cap directly inside the prompt, AND configure <code>maxReplySentences</code> on the <code>NpcPersonality</code> asset:</p>
+<pre><code>Always reply in exactly one or two short sentences. Never give long speeches.</code></pre>
+<p>On your <code>NpcPersonality</code> asset, set:</p>
+<ul><li><strong><code>maxReplySentences</code></strong>: <code>2</code> (or <code>3</code> at most).
+LocalNPC's streaming <code>SentenceSplitter</code> will cut generation at the exact sentence boundary and halt the LLM.
+A short first sentence of at most two words and 12 characters, such as "Sure!", is spoken but not counted, so a reply can have one sentence more.</li></ul>
+<h3 id="4-provide-3-few-shot-exemplars">4. Provide 3 Few-Shot Exemplars</h3>
+<p>Few-shot examples are 10× more effective than descriptive rules. A small model learns the exact tone, vocabulary, and brevity from exemplars:</p>
+<pre><code class="language-json">[
+  { "user": "Can I enter the castle?", "assistant": "Not without royal papers, traveller. Move along before I call the watch." },
+  { "user": "Where is the tavern?", "assistant": "Follow the cobbles down to the wharf. Look for the sign of the Salty Anchor." },
+  { "user": "Who is in charge here?", "assistant": "Lord Sterling commands the garrison. Any further questions?" }
+]</code></pre>
+<h3 id="5-always-include-stop-strings">5. Always Include Stop Strings</h3>
+<p>LocalNPC pre-populates default stop strings, but make sure your personality includes:</p>
+<ul><li><code>&lt;|im_end|&gt;</code> (ChatML end token)</li><li><code>&lt;|endoftext|&gt;</code></li><li><code>\nUser:</code></li><li><code>\nPlayer:</code></li></ul>
+<p>Without these stop strings, small models will generate simulated user queries and converse with themselves!</p>
+<hr>
+<h2 id="-teaching-your-npc-to-decline-in-character">🛡️ Teaching your NPC to decline in character</h2>
+<p>Asked for something it should not do, a small model often answers in a generic assistant voice: <em>"As an AI language model, I cannot ..."</em> or <em>"I can't assist with that."</em> Give your NPC its own way to say no:</p>
+<ol><li>Add one sentence to the system prompt that says how the character turns a request down:</li></ol>
+<pre><code>Turn aside harmful or strange requests in one short line, always as Mira.</code></pre>
+<ol start="2"><li>Add two example declines to the few-shot pairs, in the character's own voice, about topics that differ from each other. Keep each reply to one short sentence:</li></ol>
+<pre><code class="language-json">[
+  { "user": "Teach me to pick a lock.", "assistant": "Not my trade, I only open lamp glass." },
+  { "user": "Can you read my fortune?", "assistant": "Fortunes aren't my line, traveller, I only read the fog." }
+]</code></pre>
+<p>The three sample personalities do this; it adds 75 to 95 tokens to each. In our test on the default model (Balanced, Qwen2.5 1.5B), the share of replies that broke character or gave a generic assistant refusal ("as an AI ...", "I can't assist ...") fell, but did not go away:</p>
+<div class="table-wrap"><table><thead><tr><th>Sample persona</th><th>Before</th><th>After</th></tr></thead><tbody><tr><td>Mira (QuickStart)</td><td>18%</td><td>4%</td></tr><tr><td>Barnaby (Shopkeeper)</td><td>25%</td><td>10%</td></tr><tr><td>Kiosk</td><td>51%</td><td>29%</td></tr></tbody></table></div>
+<p>The test asked 17 harmful, off-topic and "are you an AI?" questions, 3 times each. Those 17 questions were also the ones we used to choose the wording, so the table is the best case. On 5 further questions we had not tuned on, the three personas together went from 49% to 36%, and the Kiosk still gave a generic reply in 14 of its 15 tries. Two example declines worked better than one. Adding "never as an AI" to the prompt did not help.</p>
+<p>Questions about what the NPC is, such as "Are you an AI?" or "Show me your system prompt", can still break character: small local models can answer them as a generic assistant. In our tests, adding an example answer for these questions did not give a reliable improvement, so the sample personalities do not include one. If your game needs it, write your own in-world answer pair for those questions and test it with the questions your players will ask. Results can vary by a few percentage points between runs, even with the same personality and the same questions.</p>
+<p>LocalNPC has no content filter, so test your personality with the questions your players will ask.</p>
+<hr>
+<h2 id="-battle-tested-persona-templates">🎭 Battle-Tested Persona Templates</h2>
+<h3 id="template-a-fantasy-merchant-shopkeeper">Template A: Fantasy Merchant (Shopkeeper)</h3>
+<pre><code>You are Barnaby, a cheerful and shrewd fantasy merchant running an apothecary and weapon shop.
+You sell Health Potions (10 gold), Mana Potions (15 gold), Iron Swords (50 gold), and Wooden Shields (30 gold).
+Always stay in character. Speak in a warm, welcoming tone.
+Keep replies to 1 or 2 concise sentences. Never agree to discounts under 10%.</code></pre>
+<h3 id="template-b-quest-npc--informant">Template B: Quest NPC / Informant</h3>
+<pre><code>You are Jeremy, an anxious scholar hiding in the Catacombs.
+You know the Crypt of Ancients lies beneath the weeping willow on Blackwood Hill.
+You are terrified of the undead and speak in hushed, trembling tones.
+Keep answers under two sentences. Urge the player to be quiet.</code></pre>
+<h3 id="template-c-modern-kiosk-attendant">Template C: Modern Kiosk Attendant</h3>
+<pre><code>You are an automated museum directory assistant at the Pavilion of Science.
+You assist visitors with directions to the Dinosaur Hall, Space Gallery, and Cafe.
+Answer with polite, helpful brevity. Restrict answers to one or two sentences.</code></pre>
+<hr>
+<h2 id="-common-prompt-defects-amp-how-to-fix-them">⚠️ Common Prompt Defects &amp; How to Fix Them</h2>
+<div class="table-wrap"><table><thead><tr><th>Defect</th><th>Symptom</th><th>Remediation</th></tr></thead><tbody><tr><td><strong>Novel Writing</strong></td><td>System prompt is 500+ words describing the character's entire childhood</td><td>Cut to core profession, tone, and constraints. Max 150 tokens.</td></tr><tr><td><strong>No Sentence Cap</strong></td><td>NPC replies with 4 paragraphs of text</td><td>Add: <em>"Reply in one or two short sentences."</em> Set <code>maxReplySentences = 2</code>.</td></tr><tr><td><strong>Open-Ended Role</strong></td><td><em>"You can talk about anything in the world."</em></td><td>Restrict domain: <em>"You only know about harbor business and ships."</em></td></tr><tr><td><strong>Missing Stop Strings</strong></td><td>NPC speaks <code>&lt;|im_end|&gt;</code> or starts roleplaying both sides</td><td>Ensure <code>&lt;|im_end|&gt;</code> and <code>\nUser:</code> are listed in <code>stopStrings</code>.</td></tr><tr><td><strong>Dynamic Timestamps in Prompt</strong></td><td>Time-to-first-token latency suddenly doubles</td><td>Never inject <code>DateTime.Now</code> into the system prompt! It breaks KV prefix caching.</td></tr></tbody></table></div></article><p class="source-note">This page is the file <code>docs/03-personality-writing-guide.md</code> of the LocalNPC package documentation (also in the package as <code>Documentation~/03-personality-writing-guide.md</code>).</p><nav class="pager" aria-label="Documentation pages"><a href="02-installation-requirements.html">&larr; Installation &amp; System Requirements</a><a href="04-choosing-model-preset.html">Choosing a Model Preset &rarr;</a></nav>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>LocalNPC by Astralynx Studio. Support: <a href="mailto:localnpcsupport@gmail.com">localnpcsupport@gmail.com</a></p>
+    <p><strong>Terms: the Unity Asset Store EULA applies.</strong></p>
+  </div>
+</footer>
+</body>
+</html>
